@@ -24,6 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		45D95D17259E4B32A4A20D9B /* AGENT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENT.md; sourceTree = "<group>"; };
 		86AE25682F83D7060018B746 /* PHOTOIN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PHOTOIN.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		86AE25772F83D7080018B746 /* PHOTOINTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PHOTOINTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		86AE25812F83D7080018B746 /* PHOTOINUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PHOTOINUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -75,6 +76,7 @@
 		86AE255F2F83D7060018B746 = {
 			isa = PBXGroup;
 			children = (
+				45D95D17259E4B32A4A20D9B /* AGENT.md */,
 				86AE256A2F83D7060018B746 /* PHOTOIN */,
 				86AE257A2F83D7080018B746 /* PHOTOINTests */,
 				86AE25842F83D7080018B746 /* PHOTOINUITests */,
