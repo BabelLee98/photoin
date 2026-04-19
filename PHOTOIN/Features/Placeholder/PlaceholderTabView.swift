@@ -36,7 +36,7 @@ struct PlaceholderTabView: View {
                     .padding(.horizontal, 28)
             }
         }
-        .navigationTitle("预留")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

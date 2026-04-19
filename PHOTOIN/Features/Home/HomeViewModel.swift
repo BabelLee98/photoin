@@ -12,9 +12,9 @@ import Observation
 @Observable
 final class HomeViewModel {
     var searchText = ""
-    var globeRotation = -20.0
     var isUploadPromptPresented = false
     private(set) var photos: [TravelPhoto] = []
+    private var selectedPhotoID: TravelPhoto.ID?
 
     private let repository: any TravelPhotoRepository
     private let explorationService: TravelPhotoExplorationService
@@ -33,7 +33,16 @@ final class HomeViewModel {
     }
 
     var featuredPhoto: TravelPhoto? {
-        explorationService.featuredPhoto(from: filteredPhotos, rotation: globeRotation)
+        if let selectedPhotoID,
+           let selectedPhoto = filteredPhotos.first(where: { $0.id == selectedPhotoID }) {
+            return selectedPhoto
+        }
+
+        return filteredPhotos.first
+    }
+
+    var selectedFeaturedPhotoID: TravelPhoto.ID? {
+        featuredPhoto?.id
     }
 
     /// Loads the current travel photo collection once so the screen can render without duplicate fetches.
@@ -43,7 +52,15 @@ final class HomeViewModel {
         }
 
         photos = await repository.fetchTravelPhotos()
+        if selectedPhotoID == nil {
+            selectedPhotoID = photos.first?.id
+        }
         hasLoadedPhotos = true
+    }
+
+    /// Updates the currently featured photo when the user taps a map marker.
+    func selectPhoto(id: TravelPhoto.ID) {
+        selectedPhotoID = id
     }
 
     /// Presents the upload placeholder prompt from the home screen.

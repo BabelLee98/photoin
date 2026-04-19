@@ -38,7 +38,7 @@ struct ProfileView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Color(red: 0.94, green: 0.95, blue: 0.93))
-        .navigationTitle("我的")
+        .navigationTitle("")
     }
 }
 

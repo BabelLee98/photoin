@@ -9,6 +9,7 @@ import SwiftUI
 
 struct HomeView: View {
     @State private var viewModel: HomeViewModel
+    @State private var isBottomPanelExpanded = false
 
     init(viewModel: HomeViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -16,119 +17,87 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
+            TravelPhotoMapView(
+                photos: viewModel.filteredPhotos,
+                selectedPhotoID: viewModel.selectedFeaturedPhotoID,
+                onSelectPhoto: viewModel.selectPhoto
+            )
+            .ignoresSafeArea()
+
             LinearGradient(
                 colors: [
-                    Color(red: 0.94, green: 0.95, blue: 0.93),
-                    Color(red: 0.9, green: 0.92, blue: 0.91)
+                    Color.black.opacity(0.16),
+                    Color.clear,
+                    Color.black.opacity(0.24)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
             .ignoresSafeArea()
+            .allowsHitTesting(false)
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 7) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundStyle(Color(red: 0.45, green: 0.49, blue: 0.51))
+            VStack(spacing: 0) {
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(Color.white.opacity(0.88))
 
-                            TextField("搜索地点", text: $viewModel.searchText)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 5)
-                        .background(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(Color.white.opacity(0.75))
-                        )
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(Color.white.opacity(0.7), lineWidth: 1)
-                        }
-                    }
-                    .padding(.top, 20)
+                    TextField("搜索地点", text: $viewModel.searchText)
+                        .foregroundStyle(Color.white)
+                        .font(.system(.subheadline, design: .rounded, weight: .medium))
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                }
+                .padding(.top, 0)
+                .padding(.horizontal, 16)
 
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 36, style: .continuous)
-                            .fill(Color.white.opacity(0.34))
-                            .frame(height: 460)
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 36, style: .continuous)
-                                    .stroke(Color.white.opacity(0.45), lineWidth: 1)
-                            }
+                Spacer()
 
-                        VStack(spacing: 7) {
-                            TravelGlobeView(
-                                photos: viewModel.filteredPhotos,
-                                highlightedPhotoID: viewModel.featuredPhoto?.id,
-                                rotation: $viewModel.globeRotation
-                            )
-                            .frame(height: 340)
+                HomeBottomSheetView(
+                    featuredPhoto: viewModel.featuredPhoto,
+                    locationCount: viewModel.filteredPhotos.count,
+                    isExpanded: $isBottomPanelExpanded
+                )
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
+                .animation(.spring(response: 0.34, dampingFraction: 0.86), value: isBottomPanelExpanded)
+            }
 
-                            if let featuredPhoto = viewModel.featuredPhoto {
-                                FeaturedPhotoCardView(photo: featuredPhoto)
-                                    .padding(.horizontal, 18)
-                            } else {
-                                VStack(spacing: 10) {
-                                    Image(systemName: "location.slash")
-                                        .font(.system(size: 26, weight: .medium))
-                                        .foregroundStyle(Color(red: 0.48, green: 0.52, blue: 0.54))
+            VStack {
+                Spacer()
 
-                                    Text("没有找到匹配的地点")
-                                        .font(.system(.headline, design: .rounded, weight: .medium))
-                                        .foregroundStyle(Color(red: 0.28, green: 0.31, blue: 0.34))
-
-                                    Text("换个地名试试，或者稍后把新的旅行照片上传进来。")
-                                        .font(.system(.subheadline, design: .rounded, weight: .regular))
-                                        .multilineTextAlignment(.center)
-                                        .foregroundStyle(Color(red: 0.46, green: 0.5, blue: 0.53))
-                                }
-                                .padding(.horizontal, 32)
-                            }
-                        }
-                        .padding(.vertical, 10)
-                    }
+                HStack {
+                    Spacer()
 
                     Button {
                         viewModel.presentUploadPrompt()
                     } label: {
-                        Label("上传", systemImage: "square.and.arrow.up")
-                            .font(.system(.headline, design: .rounded, weight: .semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 5)
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 58, height: 58)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                            }
+                            .shadow(color: .black.opacity(0.16), radius: 14, y: 8)
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(.white)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color(red: 0.24, green: 0.31, blue: 0.34))
-                    )
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("已收录 \(viewModel.filteredPhotos.count) 个地点")
-                            .font(.system(.headline, design: .rounded, weight: .medium))
-                            .foregroundStyle(Color(red: 0.22, green: 0.25, blue: 0.28))
-
-                        Text("先用示例照片把交互搭起来。后面我们可以接真实照片权限、定位提取和地图详情页。")
-                            .font(.system(.subheadline, design: .rounded, weight: .regular))
-                            .foregroundStyle(Color(red: 0.43, green: 0.47, blue: 0.49))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .fill(Color.white.opacity(0.55))
-                    )
+                    .accessibilityLabel("上传照片")
+                    .accessibilityHint("后续将用于导入带定位的旅行照片")
+                    .padding(.trailing, 20)
+                    .padding(.bottom, isBottomPanelExpanded ? 250 : 150)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
             }
         }
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         .task {
             await viewModel.loadPhotosIfNeeded()
         }

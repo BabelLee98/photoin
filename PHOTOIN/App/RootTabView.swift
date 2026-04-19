@@ -20,17 +20,17 @@ struct RootTabView: View {
             }
 
             NavigationStack {
-                PlaceholderTabView()
+                RouteRecordingView(viewModel: dependencies.makeRouteRecordingViewModel())
             }
             .tabItem {
-                Label("预留", systemImage: "square.grid.2x2")
+                Label("", systemImage: "figure.hiking")
             }
 
             NavigationStack {
                 ProfileView()
             }
             .tabItem {
-                Label("我的", systemImage: "person.crop.circle")
+                Label("", systemImage: "person.crop.circle")
             }
         }
         .tint(Color(red: 0.25, green: 0.32, blue: 0.35))
