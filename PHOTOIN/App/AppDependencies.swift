@@ -10,12 +10,14 @@ import Foundation
 struct AppDependencies {
     let travelPhotoRepository: any TravelPhotoRepository
     let hikeLocationTracker: any HikeLocationTracking
+    let hikeRouteHistoryRepository: any HikeRouteHistoryRepository
 
     /// Builds the dependency container used by the current app target.
     static func live() -> AppDependencies {
         AppDependencies(
             travelPhotoRepository: SampleTravelPhotoRepository(),
-            hikeLocationTracker: LiveHikeLocationTracker()
+            hikeLocationTracker: LiveHikeLocationTracker(),
+            hikeRouteHistoryRepository: InMemoryHikeRouteHistoryRepository()
         )
     }
 
@@ -24,7 +26,8 @@ struct AppDependencies {
     func makeHomeViewModel() -> HomeViewModel {
         HomeViewModel(
             repository: travelPhotoRepository,
-            explorationService: TravelPhotoExplorationService()
+            explorationService: TravelPhotoExplorationService(),
+            hikeRouteHistoryRepository: hikeRouteHistoryRepository
         )
     }
 
@@ -33,7 +36,8 @@ struct AppDependencies {
     func makeRouteRecordingViewModel() -> RouteRecordingViewModel {
         RouteRecordingViewModel(
             locationTracker: hikeLocationTracker,
-            recordingService: HikeRouteRecordingService()
+            recordingService: HikeRouteRecordingService(),
+            hikeRouteHistoryRepository: hikeRouteHistoryRepository
         )
     }
 }

@@ -13,9 +13,10 @@ struct HikeRouteRecordingService {
     private let maximumAcceptedAccuracy: CLLocationAccuracy = 65
 
     /// Starts a fresh route session when the user taps the record button.
-    func startRoute(at date: Date = .now) -> HikeRoute {
+    func startRoute(activityType: HikeRoute.ActivityType, at date: Date = .now) -> HikeRoute {
         HikeRoute(
             id: UUID(),
+            activityType: activityType,
             startedAt: date,
             endedAt: nil,
             points: [],
@@ -43,6 +44,7 @@ struct HikeRouteRecordingService {
         guard let lastPoint = route.points.last else {
             return HikeRoute(
                 id: route.id,
+                activityType: route.activityType,
                 startedAt: route.startedAt,
                 endedAt: route.endedAt,
                 points: [point],
@@ -58,6 +60,7 @@ struct HikeRouteRecordingService {
 
         return HikeRoute(
             id: route.id,
+            activityType: route.activityType,
             startedAt: route.startedAt,
             endedAt: route.endedAt,
             points: route.points + [point],
@@ -86,6 +89,7 @@ struct HikeRouteRecordingService {
 
         return HikeRoute(
             id: updatedRoute.id,
+            activityType: updatedRoute.activityType,
             startedAt: updatedRoute.startedAt,
             endedAt: updatedRoute.endedAt,
             points: updatedRoute.points,
@@ -102,6 +106,7 @@ struct HikeRouteRecordingService {
 
         return HikeRoute(
             id: route.id,
+            activityType: route.activityType,
             startedAt: route.startedAt,
             endedAt: date,
             points: route.points,
@@ -123,6 +128,7 @@ struct HikeRouteRecordingService {
 
         return HikeRoute(
             id: route.id,
+            activityType: route.activityType,
             startedAt: route.startedAt,
             endedAt: route.endedAt,
             points: route.points + [point],

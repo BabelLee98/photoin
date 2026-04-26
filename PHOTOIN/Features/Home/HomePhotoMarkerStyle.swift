@@ -15,28 +15,28 @@ struct HomePhotoMarkerStyle {
 enum HomePhotoMarkerStyleProvider {
     /// Returns the visual marker style used by the home globe for a given travel photo.
     static func style(for photo: TravelPhoto) -> HomePhotoMarkerStyle {
-        switch photo.title {
-        case "清晨的海岬":
+        switch photo.locationName {
+        case "Cape Reinga":
             return HomePhotoMarkerStyle(
                 accentColor: Color(red: 0.49, green: 0.59, blue: 0.62),
                 symbolName: "camera.aperture"
             )
-        case "山口云海":
+        case "河口湖":
             return HomePhotoMarkerStyle(
                 accentColor: Color(red: 0.56, green: 0.56, blue: 0.60),
                 symbolName: "mountain.2"
             )
-        case "古城黄昏":
+        case "布拉格城堡":
             return HomePhotoMarkerStyle(
                 accentColor: Color(red: 0.59, green: 0.52, blue: 0.47),
                 symbolName: "building.columns"
             )
-        case "雪原终点站":
+        case "Hallstatt":
             return HomePhotoMarkerStyle(
                 accentColor: Color(red: 0.63, green: 0.67, blue: 0.70),
                 symbolName: "snowflake"
             )
-        case "城市夜色":
+        case "上海外滩":
             return HomePhotoMarkerStyle(
                 accentColor: Color(red: 0.35, green: 0.41, blue: 0.46),
                 symbolName: "sparkles"

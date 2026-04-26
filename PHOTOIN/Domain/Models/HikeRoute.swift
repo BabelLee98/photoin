@@ -9,6 +9,22 @@ import CoreLocation
 import Foundation
 
 struct HikeRoute: Equatable, Sendable {
+    enum ActivityType: String, CaseIterable, Identifiable, Sendable {
+        case hike
+        case mountainClimb
+
+        var id: Self { self }
+
+        var displayName: String {
+            switch self {
+            case .hike:
+                "徒步"
+            case .mountainClimb:
+                "爬山"
+            }
+        }
+    }
+
     struct Point: Identifiable, Equatable, Sendable {
         let id: UUID
         let coordinate: HikeCoordinate
@@ -45,6 +61,7 @@ struct HikeRoute: Equatable, Sendable {
     }
 
     let id: UUID
+    let activityType: ActivityType
     let startedAt: Date?
     let endedAt: Date?
     let points: [Point]
@@ -61,9 +78,15 @@ struct HikeRoute: Equatable, Sendable {
         points.last?.coordinate ?? checkpoints.last?.coordinate
     }
 
+    /// Indicates whether the current route contains any recorded movement or manual checkpoints.
+    var hasContent: Bool {
+        points.isEmpty == false || checkpoints.isEmpty == false
+    }
+
     /// Provides an empty route state before the user starts recording.
     static let empty = HikeRoute(
         id: UUID(),
+        activityType: .hike,
         startedAt: nil,
         endedAt: nil,
         points: [],
@@ -73,6 +96,7 @@ struct HikeRoute: Equatable, Sendable {
 
     init(
         id: UUID = UUID(),
+        activityType: ActivityType,
         startedAt: Date?,
         endedAt: Date?,
         points: [Point],
@@ -80,6 +104,7 @@ struct HikeRoute: Equatable, Sendable {
         totalDistance: CLLocationDistance
     ) {
         self.id = id
+        self.activityType = activityType
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.points = points

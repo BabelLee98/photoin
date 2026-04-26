@@ -19,6 +19,7 @@ final class RouteRecordingViewModel {
     }
 
     var route: HikeRoute = .empty
+    var selectedActivityType: HikeRoute.ActivityType = .hike
     var latestSample: HikeLocationSample?
     var permissionState: PermissionState = .unknown
     var infoMessage = "点击开始后会记录徒步路线，你也可以在途中手动添加记录点。"
@@ -26,14 +27,17 @@ final class RouteRecordingViewModel {
 
     private let locationTracker: any HikeLocationTracking
     private let recordingService: HikeRouteRecordingService
+    private let hikeRouteHistoryRepository: any HikeRouteHistoryRepository
     private var trackingTask: Task<Void, Never>?
 
     init(
         locationTracker: any HikeLocationTracking,
-        recordingService: HikeRouteRecordingService
+        recordingService: HikeRouteRecordingService,
+        hikeRouteHistoryRepository: any HikeRouteHistoryRepository
     ) {
         self.locationTracker = locationTracker
         self.recordingService = recordingService
+        self.hikeRouteHistoryRepository = hikeRouteHistoryRepository
         updatePermissionState(from: locationTracker.authorizationStatus())
     }
 
@@ -58,6 +62,24 @@ final class RouteRecordingViewModel {
 
         route = updatedRoute
         infoMessage = "已添加 \(updatedRoute.checkpoints.last?.title ?? "记录点")。"
+    }
+
+    /// Updates the selected recording type for the next route while preserving the summary of finished routes.
+    func updateSelectedActivityType(_ activityType: HikeRoute.ActivityType) {
+        selectedActivityType = activityType
+
+        if route.isRecording {
+            route = HikeRoute(
+                id: route.id,
+                activityType: activityType,
+                startedAt: route.startedAt,
+                endedAt: route.endedAt,
+                points: route.points,
+                checkpoints: route.checkpoints,
+                totalDistance: route.totalDistance
+            )
+            infoMessage = "当前按\(activityType.displayName)模式记录路线。"
+        }
     }
 
     /// Clears the current one-shot error prompt after the user acknowledges it.
@@ -99,9 +121,9 @@ final class RouteRecordingViewModel {
         case .denied:
             return "需要开启定位权限后才能记录路线。"
         case .unknown:
-            return route.isRecording ? "正在等待定位权限或首个定位点。" : "点击开始后即可记录徒步路线。"
+            return route.isRecording ? "正在等待定位权限或首个定位点。" : "点击开始后即可记录\(selectedActivityType.displayName)路线。"
         case .ready:
-            return route.isRecording ? "正在记录路线，可随时添加记录点。" : "准备就绪，点击开始即可追踪徒步路线。"
+            return route.isRecording ? "正在记录\(route.activityType.displayName)路线，可随时添加记录点。" : "准备就绪，点击开始即可追踪\(selectedActivityType.displayName)路线。"
         }
     }
 
@@ -131,9 +153,9 @@ final class RouteRecordingViewModel {
             return
         }
 
-        route = recordingService.startRoute()
+        route = recordingService.startRoute(activityType: selectedActivityType)
         latestSample = nil
-        infoMessage = "路线记录已开始，等待定位点接入。"
+        infoMessage = "\(selectedActivityType.displayName)记录已开始，等待定位点接入。"
         trackingTask?.cancel()
 
         let stream = locationTracker.startTracking()
@@ -154,7 +176,8 @@ final class RouteRecordingViewModel {
         trackingTask?.cancel()
         trackingTask = nil
         route = recordingService.finishRoute(route)
-        infoMessage = route.points.isEmpty ? "这次路线还没有留下有效轨迹。" : "路线记录已结束。"
+        persistCompletedRouteIfNeeded()
+        infoMessage = route.points.isEmpty ? "这次路线还没有留下有效轨迹。" : "\(route.activityType.displayName)记录已结束。"
     }
 
     /// Applies authorization and location events from the live tracker into view-friendly feature state.
@@ -167,6 +190,7 @@ final class RouteRecordingViewModel {
                 trackingTask?.cancel()
                 trackingTask = nil
                 route = route.points.isEmpty ? .empty : recordingService.finishRoute(route)
+                persistCompletedRouteIfNeeded()
                 infoMessage = "定位权限未开启，暂时无法继续记录路线。"
             }
         case let .locationUpdated(sample):
@@ -192,5 +216,20 @@ final class RouteRecordingViewModel {
         @unknown default:
             permissionState = .unknown
         }
+    }
+
+    /// Saves a finished route once so the home summary can reflect completed hiking sessions.
+    private func persistCompletedRouteIfNeeded() {
+        guard route.isRecording == false,
+              route.hasContent else {
+            return
+        }
+
+        let existingRoutes = hikeRouteHistoryRepository.fetchRecordedRoutes()
+        guard existingRoutes.contains(where: { $0.id == route.id }) == false else {
+            return
+        }
+
+        hikeRouteHistoryRepository.saveRecordedRoute(route)
     }
 }

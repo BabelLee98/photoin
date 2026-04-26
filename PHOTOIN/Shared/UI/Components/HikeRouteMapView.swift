@@ -13,6 +13,8 @@ struct HikeRouteMapView: UIViewRepresentable {
     let latestSample: HikeLocationSample?
     let showsUserLocation: Bool
 
+    private static let beijingCenter = CLLocationCoordinate2D(latitude: 39.9042, longitude: 116.4074)
+
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
@@ -21,21 +23,26 @@ struct HikeRouteMapView: UIViewRepresentable {
         let mapView = MKMapView(frame: .zero)
         mapView.delegate = context.coordinator
         mapView.mapType = .mutedStandard
+        mapView.overrideUserInterfaceStyle = .dark
         mapView.pointOfInterestFilter = .excludingAll
         mapView.showsTraffic = false
         mapView.isPitchEnabled = false
         mapView.isRotateEnabled = false
         mapView.showsCompass = false
         mapView.showsScale = false
+        mapView.setRegion(defaultRegion(), animated: false)
         mapView.register(MKMarkerAnnotationView.self, forAnnotationViewWithReuseIdentifier: Coordinator.checkpointReuseIdentifier)
         return mapView
     }
 
     func updateUIView(_ mapView: MKMapView, context: Context) {
         mapView.showsUserLocation = showsUserLocation
+        context.coordinator.showsUserLocation = showsUserLocation
+        context.coordinator.shouldCenterOnUserLocationWhenEmpty = route.points.isEmpty && route.checkpoints.isEmpty && latestSample == nil
         syncRoute(on: mapView, coordinator: context.coordinator)
         syncCheckpoints(on: mapView, coordinator: context.coordinator)
         updateVisibleRegion(on: mapView, coordinator: context.coordinator)
+        updateDefaultRegionIfNeeded(on: mapView, coordinator: context.coordinator)
     }
 
     /// Keeps the polyline overlay aligned with the current route points.
@@ -72,6 +79,7 @@ struct HikeRouteMapView: UIViewRepresentable {
         if coordinator.lastRouteID != route.id {
             coordinator.lastRouteID = route.id
             coordinator.didFocusCurrentRoute = false
+            coordinator.emptyStateCenter = nil
         }
 
         let contentCount = route.points.count + route.checkpoints.count
@@ -81,6 +89,7 @@ struct HikeRouteMapView: UIViewRepresentable {
         }
 
         coordinator.didFocusCurrentRoute = true
+        coordinator.emptyStateCenter = nil
 
         if route.points.count > 1 {
             let polylineBoundingRect = MKPolyline(
@@ -97,21 +106,64 @@ struct HikeRouteMapView: UIViewRepresentable {
         }
 
         if let coordinate = route.points.first?.coordinate ?? latestSample?.coordinate {
-            let region = MKCoordinateRegion(
-                center: coordinate.clCoordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.012, longitudeDelta: 0.012)
-            )
-            mapView.setRegion(region, animated: true)
+            mapView.setRegion(Self.region(around: coordinate.clCoordinate), animated: true)
         }
+    }
+
+    /// Applies the empty-state center rule: user location when authorized, otherwise Beijing.
+    private func updateDefaultRegionIfNeeded(on mapView: MKMapView, coordinator: Coordinator) {
+        guard route.points.isEmpty, route.checkpoints.isEmpty, latestSample == nil else {
+            return
+        }
+
+        if showsUserLocation,
+           let coordinate = mapView.userLocation.location?.coordinate,
+           coordinator.emptyStateCenter != .userLocation {
+            mapView.setRegion(Self.region(around: coordinate), animated: true)
+            coordinator.emptyStateCenter = .userLocation
+            return
+        }
+
+        guard coordinator.emptyStateCenter != .beijing else {
+            return
+        }
+
+        mapView.setRegion(Self.region(around: Self.beijingCenter), animated: false)
+        coordinator.emptyStateCenter = .beijing
+    }
+
+    /// Builds the initial 3-kilometer region used before the map has enough route content to fit.
+    private func defaultRegion() -> MKCoordinateRegion {
+        let center = route.latestCoordinate?.clCoordinate
+            ?? Self.beijingCenter
+
+        return Self.region(around: center)
+    }
+
+    /// Returns a nearby region spanning roughly 3 kilometers around the provided center coordinate.
+    private static func region(around coordinate: CLLocationCoordinate2D) -> MKCoordinateRegion {
+        MKCoordinateRegion(
+            center: coordinate,
+            latitudinalMeters: 3_000,
+            longitudinalMeters: 3_000
+        )
     }
 
     final class Coordinator: NSObject, MKMapViewDelegate {
         static let checkpointReuseIdentifier = "HikeCheckpointMarker"
 
+        enum EmptyStateCenter {
+            case beijing
+            case userLocation
+        }
+
         var lastPointCount = 0
         var lastCheckpointCount = 0
         var lastRouteID: UUID?
         var didFocusCurrentRoute = false
+        var showsUserLocation = false
+        var shouldCenterOnUserLocationWhenEmpty = true
+        var emptyStateCenter: EmptyStateCenter?
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: any MKOverlay) -> MKOverlayRenderer {
             guard let polyline = overlay as? MKPolyline else {
@@ -119,7 +171,7 @@ struct HikeRouteMapView: UIViewRepresentable {
             }
 
             let renderer = MKPolylineRenderer(polyline: polyline)
-            renderer.strokeColor = UIColor(red: 0.18, green: 0.22, blue: 0.24, alpha: 0.94)
+            renderer.strokeColor = UIColor(red: 0.52, green: 0.58, blue: 0.61, alpha: 0.9)
             renderer.lineWidth = 5
             renderer.lineCap = .round
             renderer.lineJoin = .round
@@ -141,11 +193,28 @@ struct HikeRouteMapView: UIViewRepresentable {
 
             markerView.annotation = checkpointAnnotation
             markerView.canShowCallout = true
-            markerView.markerTintColor = UIColor(red: 0.39, green: 0.45, blue: 0.49, alpha: 1)
+            markerView.animatesWhenAdded = true
+            markerView.markerTintColor = UIColor(red: 0.44, green: 0.49, blue: 0.53, alpha: 1)
             markerView.glyphImage = UIImage(systemName: "flag.fill")
             markerView.glyphTintColor = .white
             markerView.displayPriority = .required
+            markerView.layer.shadowColor = UIColor.black.cgColor
+            markerView.layer.shadowOpacity = 0.18
+            markerView.layer.shadowRadius = 8
+            markerView.layer.shadowOffset = CGSize(width: 0, height: 4)
             return markerView
+        }
+
+        func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
+            guard showsUserLocation,
+                  shouldCenterOnUserLocationWhenEmpty,
+                  emptyStateCenter != .userLocation,
+                  let coordinate = userLocation.location?.coordinate else {
+                return
+            }
+
+            mapView.setRegion(HikeRouteMapView.region(around: coordinate), animated: true)
+            emptyStateCenter = .userLocation
         }
     }
 }

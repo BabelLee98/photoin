@@ -21,7 +21,6 @@ struct TravelPhotoExplorationService {
 
         return photos.filter { photo in
             let searchableText = [
-                photo.title,
                 photo.locationName,
                 photo.regionName
             ]

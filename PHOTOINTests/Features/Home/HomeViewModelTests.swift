@@ -14,14 +14,12 @@ struct HomeViewModelTests {
     @Test func featuredPhotoDefaultsToFirstFilteredResultAfterLoad() async throws {
         let photos = [
             TravelPhoto(
-                title: "Alpha",
                 locationName: "Seoul",
                 regionName: "Korea",
                 captureDate: "2026.04.01",
                 coordinate: .init(latitude: 37.5665, longitude: 126.9780)
             ),
             TravelPhoto(
-                title: "Beta",
                 locationName: "Busan",
                 regionName: "Korea",
                 captureDate: "2026.04.02",
@@ -30,7 +28,8 @@ struct HomeViewModelTests {
         ]
         let viewModel = HomeViewModel(
             repository: MockTravelPhotoRepository(photos: photos),
-            explorationService: TravelPhotoExplorationService()
+            explorationService: TravelPhotoExplorationService(),
+            hikeRouteHistoryRepository: MockHikeRouteHistoryRepository(routes: [])
         )
 
         await viewModel.loadPhotosIfNeeded()
@@ -41,14 +40,12 @@ struct HomeViewModelTests {
     @Test func selectingMapMarkerUpdatesFeaturedPhoto() async throws {
         let photos = [
             TravelPhoto(
-                title: "Alpha",
                 locationName: "Seoul",
                 regionName: "Korea",
                 captureDate: "2026.04.01",
                 coordinate: .init(latitude: 37.5665, longitude: 126.9780)
             ),
             TravelPhoto(
-                title: "Beta",
                 locationName: "Busan",
                 regionName: "Korea",
                 captureDate: "2026.04.02",
@@ -57,13 +54,68 @@ struct HomeViewModelTests {
         ]
         let viewModel = HomeViewModel(
             repository: MockTravelPhotoRepository(photos: photos),
-            explorationService: TravelPhotoExplorationService()
+            explorationService: TravelPhotoExplorationService(),
+            hikeRouteHistoryRepository: MockHikeRouteHistoryRepository(routes: [])
         )
 
         await viewModel.loadPhotosIfNeeded()
         viewModel.selectPhoto(id: photos[1].id)
 
         #expect(viewModel.featuredPhoto?.id == photos[1].id)
+    }
+
+    @Test func summaryMetricsReflectAvailablePhotoData() async throws {
+        let photos = [
+            TravelPhoto(
+                locationName: "Mount Cook",
+                regionName: "New Zealand",
+                captureDate: "2026.04.01",
+                coordinate: .init(latitude: -43.5950, longitude: 170.1418)
+            ),
+            TravelPhoto(
+                locationName: "Hallstatt",
+                regionName: "Austria",
+                captureDate: "2026.04.01",
+                coordinate: .init(latitude: 47.5622, longitude: 13.6493)
+            ),
+            TravelPhoto(
+                locationName: "Seoul",
+                regionName: "Korea",
+                captureDate: "2026.04.02",
+                coordinate: .init(latitude: 37.5665, longitude: 126.9780)
+            )
+        ]
+        let viewModel = HomeViewModel(
+            repository: MockTravelPhotoRepository(photos: photos),
+            explorationService: TravelPhotoExplorationService(),
+            hikeRouteHistoryRepository: MockHikeRouteHistoryRepository(
+                routes: [
+                    HikeRoute(
+                        activityType: .mountainClimb,
+                        startedAt: Date(timeIntervalSince1970: 1_000),
+                        endedAt: Date(timeIntervalSince1970: 1_200),
+                        points: [],
+                        checkpoints: [],
+                        totalDistance: 0
+                    ),
+                    HikeRoute(
+                        activityType: .hike,
+                        startedAt: Date(timeIntervalSince1970: 2_000),
+                        endedAt: Date(timeIntervalSince1970: 2_300),
+                        points: [],
+                        checkpoints: [],
+                        totalDistance: 0
+                    )
+                ]
+            )
+        )
+
+        await viewModel.loadPhotosIfNeeded()
+
+        #expect(viewModel.totalVisitedCityCount == 3)
+        #expect(viewModel.totalClimbedMountainCount == 1)
+        #expect(viewModel.totalHikeCount == 1)
+        #expect(viewModel.totalPhotoCount == 3)
     }
 }
 
@@ -73,5 +125,24 @@ private struct MockTravelPhotoRepository: TravelPhotoRepository {
     /// Returns a predictable photo list for HomeViewModel tests.
     func fetchTravelPhotos() async -> [TravelPhoto] {
         photos
+    }
+}
+
+@MainActor
+private final class MockHikeRouteHistoryRepository: HikeRouteHistoryRepository {
+    private var routes: [HikeRoute]
+
+    init(routes: [HikeRoute]) {
+        self.routes = routes
+    }
+
+    /// Returns a stable in-memory route list for home summary assertions.
+    func fetchRecordedRoutes() -> [HikeRoute] {
+        routes
+    }
+
+    /// Stores a completed route in memory so tests can simulate shared history.
+    func saveRecordedRoute(_ route: HikeRoute) {
+        routes.insert(route, at: 0)
     }
 }

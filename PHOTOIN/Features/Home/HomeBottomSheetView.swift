@@ -74,11 +74,6 @@ struct HomeBottomSheetView: View {
                     Text("已收录 \(locationCount) 个地点")
                         .font(.system(.headline, design: .rounded, weight: .medium))
                         .foregroundStyle(Color.white)
-
-                    Text("先用示例照片把交互搭起来。后面我们可以接真实照片权限、定位提取和地图详情页。")
-                        .font(.system(.subheadline, design: .rounded, weight: .regular))
-                        .foregroundStyle(Color.white.opacity(0.82))
-                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -94,12 +89,12 @@ struct HomeBottomSheetView: View {
     }
 
     private var sheetTitle: String {
-        featuredPhoto?.title ?? "没有匹配地点"
+        featuredPhoto?.locationName ?? "没有匹配地点"
     }
 
     private var sheetSubtitle: String {
         if let featuredPhoto {
-            return "\(featuredPhoto.locationName) · \(featuredPhoto.regionName)"
+            return "\(featuredPhoto.regionName) · \(featuredPhoto.captureDate)"
         }
 
         return "换个关键词继续搜索"

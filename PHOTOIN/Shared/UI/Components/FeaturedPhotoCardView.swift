@@ -33,17 +33,17 @@ struct FeaturedPhotoCardView: View {
                 }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(photo.title)
+                Text(photo.locationName)
                     .font(.system(.title3, design: .rounded, weight: .semibold))
-                    .foregroundStyle(Color(red: 0.15, green: 0.18, blue: 0.2))
+                    .foregroundStyle(Color.white)
 
-                Text("\(photo.locationName) · \(photo.regionName)")
+                Text(photo.regionName)
                     .font(.system(.subheadline, design: .rounded, weight: .medium))
-                    .foregroundStyle(Color(red: 0.36, green: 0.41, blue: 0.43))
+                    .foregroundStyle(Color.white.opacity(0.84))
 
                 Text("拍摄于 \(photo.captureDate)")
                     .font(.system(.footnote, design: .rounded, weight: .regular))
-                    .foregroundStyle(Color(red: 0.46, green: 0.5, blue: 0.53))
+                    .foregroundStyle(Color.white.opacity(0.72))
 
                 Label("已定位保存", systemImage: "location.fill")
                     .font(.system(.footnote, design: .rounded, weight: .medium))
@@ -53,13 +53,10 @@ struct FeaturedPhotoCardView: View {
             Spacer(minLength: 0)
         }
         .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.white.opacity(0.8))
-        )
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(0.65), lineWidth: 1)
+                .stroke(Color.white.opacity(0.22), lineWidth: 1)
         }
     }
 }

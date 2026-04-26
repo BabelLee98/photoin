@@ -10,7 +10,6 @@ import Foundation
 
 struct TravelPhoto: Identifiable {
     let id: UUID
-    let title: String
     let locationName: String
     let regionName: String
     let captureDate: String
@@ -18,14 +17,12 @@ struct TravelPhoto: Identifiable {
 
     init(
         id: UUID = UUID(),
-        title: String,
         locationName: String,
         regionName: String,
         captureDate: String,
         coordinate: CLLocationCoordinate2D
     ) {
         self.id = id
-        self.title = title
         self.locationName = locationName
         self.regionName = regionName
         self.captureDate = captureDate

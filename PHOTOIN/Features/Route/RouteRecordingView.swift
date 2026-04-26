@@ -15,110 +15,48 @@ struct RouteRecordingView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("徒步路线")
-                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                        .foregroundStyle(Color(red: 0.16, green: 0.18, blue: 0.2))
-
-                    Text(viewModel.statusText())
-                        .font(.system(.body, design: .rounded, weight: .regular))
-                        .foregroundStyle(Color(red: 0.38, green: 0.42, blue: 0.44))
-                }
-
-                HikeRouteMapView(
-                    route: viewModel.route,
-                    latestSample: viewModel.latestSample,
-                    showsUserLocation: viewModel.permissionState == .ready
-                )
-                .frame(height: 360)
-                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .stroke(Color.white.opacity(0.72), lineWidth: 1)
-                }
-
-                VStack(alignment: .leading, spacing: 14) {
-                    Text(viewModel.infoMessage)
-                        .font(.system(.subheadline, design: .rounded, weight: .medium))
-                        .foregroundStyle(Color(red: 0.33, green: 0.37, blue: 0.39))
-
-                    HStack(spacing: 12) {
-                        metricCard(title: "距离", value: viewModel.formattedDistance())
-                        metricCard(title: "时长", value: viewModel.formattedDuration())
-                        metricCard(title: "记录点", value: "\(viewModel.route.checkpoints.count)")
-                    }
-
-                    HStack(spacing: 12) {
-                        Button(viewModel.primaryActionTitle()) {
-                            viewModel.toggleRecording()
-                        }
-                        .buttonStyle(RoutePrimaryButtonStyle(isRecording: viewModel.route.isRecording))
-
-                        Button("添加记录点") {
-                            viewModel.addCheckpoint()
-                        }
-                        .buttonStyle(RouteSecondaryButtonStyle())
-                        .disabled(viewModel.canAddCheckpoint() == false)
-                        .opacity(viewModel.canAddCheckpoint() ? 1 : 0.5)
-                    }
-                }
-                .padding(20)
-                .background(Color.white.opacity(0.82), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("途中记录点")
-                        .font(.system(.headline, design: .rounded, weight: .semibold))
-                        .foregroundStyle(Color(red: 0.16, green: 0.18, blue: 0.2))
-
-                    if viewModel.route.checkpoints.isEmpty {
-                        Text("开始记录后，可以在途中手动打一个记录点，方便回看停留位置。")
-                            .font(.system(.subheadline, design: .rounded, weight: .regular))
-                            .foregroundStyle(Color(red: 0.4, green: 0.44, blue: 0.46))
-                    } else {
-                        ForEach(viewModel.route.checkpoints) { checkpoint in
-                            HStack(spacing: 14) {
-                                Circle()
-                                    .fill(Color(red: 0.37, green: 0.43, blue: 0.46))
-                                    .frame(width: 12, height: 12)
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(checkpoint.title)
-                                        .font(.system(.body, design: .rounded, weight: .semibold))
-                                        .foregroundStyle(Color(red: 0.16, green: 0.18, blue: 0.2))
-
-                                    Text("\(formattedCoordinate(checkpoint.coordinate)) · \(formattedTime(checkpoint.timestamp))")
-                                        .font(.system(.footnote, design: .rounded, weight: .medium))
-                                        .foregroundStyle(Color(red: 0.42, green: 0.46, blue: 0.48))
-                                }
-
-                                Spacer(minLength: 0)
-                            }
-                            .padding(14)
-                            .background(Color.white.opacity(0.72), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        }
-                    }
-                }
-                .padding(20)
-                .background(Color.white.opacity(0.72), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 18)
-        }
-        .background(
-            LinearGradient(
-                colors: [
-                    Color(red: 0.95, green: 0.95, blue: 0.94),
-                    Color(red: 0.89, green: 0.9, blue: 0.89)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+        ZStack {
+            HikeRouteMapView(
+                route: viewModel.route,
+                latestSample: viewModel.latestSample,
+                showsUserLocation: viewModel.permissionState != .denied
             )
             .ignoresSafeArea()
-        )
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
+
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(0.28),
+                    Color.clear,
+                    Color.black.opacity(0.24)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+
+            VStack(spacing: 14) {
+                topOverlay
+
+                HStack(spacing: 12) {
+                    floatingMetricCard(title: "距离", value: viewModel.formattedDistance())
+                    floatingMetricCard(title: "时长", value: viewModel.formattedDuration())
+                }
+                .padding(.horizontal, 16)
+
+                HStack(spacing: 10) {
+                    floatingMetaPill(title: "类型", value: currentActivityType.displayName)
+                    floatingMetaPill(title: "记录点", value: "\(viewModel.route.checkpoints.count)")
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+
+                Spacer()
+
+                bottomOverlay
+            }
+        }
+        .toolbar(.hidden, for: .navigationBar)
         .task {
             viewModel.refreshPermissionState()
         }
@@ -134,20 +72,138 @@ struct RouteRecordingView: View {
         }
     }
 
-    /// Renders a compact metric card used in the route summary area.
-    private func metricCard(title: String, value: String) -> some View {
+    /// Builds the top floating card so type selection and status stay visible without stealing map space.
+    private var topOverlay: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("徒步路线")
+                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    .foregroundStyle(Color.white)
+
+                Text(viewModel.statusText())
+                    .font(.system(.subheadline, design: .rounded, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.84))
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("记录类型")
+                    .font(.system(.footnote, design: .rounded, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.72))
+
+                Picker(
+                    "记录类型",
+                    selection: Binding(
+                        get: { viewModel.selectedActivityType },
+                        set: { viewModel.updateSelectedActivityType($0) }
+                    )
+                ) {
+                    ForEach(HikeRoute.ActivityType.allCases) { activityType in
+                        Text(activityType.displayName).tag(activityType)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+        }
+        .padding(18)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(Color.white.opacity(0.22), lineWidth: 1)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+
+    /// Builds the bottom floating control card so route actions remain accessible over the full-screen map.
+    private var bottomOverlay: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(viewModel.infoMessage)
+                .font(.system(.subheadline, design: .rounded, weight: .medium))
+                .foregroundStyle(Color.white.opacity(0.84))
+
+            if let lastCheckpoint = viewModel.route.checkpoints.last {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("最近记录点")
+                        .font(.system(.caption, design: .rounded, weight: .semibold))
+                        .foregroundStyle(Color.white.opacity(0.68))
+
+                    Text("\(lastCheckpoint.title) · \(formattedTime(lastCheckpoint.timestamp))")
+                        .font(.system(.body, design: .rounded, weight: .semibold))
+                        .foregroundStyle(Color.white)
+
+                    Text(formattedCoordinate(lastCheckpoint.coordinate))
+                        .font(.system(.footnote, design: .rounded, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.74))
+                }
+            }
+
+            HStack(spacing: 12) {
+                Button(viewModel.primaryActionTitle()) {
+                    viewModel.toggleRecording()
+                }
+                .buttonStyle(RoutePrimaryButtonStyle(isRecording: viewModel.route.isRecording))
+
+                Button("添加记录点") {
+                    viewModel.addCheckpoint()
+                }
+                .buttonStyle(RouteSecondaryButtonStyle())
+                .disabled(viewModel.canAddCheckpoint() == false)
+                .opacity(viewModel.canAddCheckpoint() ? 1 : 0.5)
+            }
+        }
+        .padding(18)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(Color.white.opacity(0.22), lineWidth: 1)
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 22)
+    }
+
+    /// Returns the currently active route type, or the next selected type before recording starts.
+    private var currentActivityType: HikeRoute.ActivityType {
+        viewModel.route.isRecording ? viewModel.route.activityType : viewModel.selectedActivityType
+    }
+
+    /// Renders the prominent floating metric cards used for timing and distance on top of the map.
+    private func floatingMetricCard(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(.caption, design: .rounded, weight: .medium))
-                .foregroundStyle(Color(red: 0.43, green: 0.47, blue: 0.49))
+                .foregroundStyle(Color.white.opacity(0.7))
 
             Text(value)
-                .font(.system(.headline, design: .rounded, weight: .semibold))
-                .foregroundStyle(Color(red: 0.15, green: 0.18, blue: 0.2))
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(Color(red: 0.93, green: 0.93, blue: 0.92), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+        }
+    }
+
+    /// Renders a smaller metadata pill so route type and checkpoint count stay visible but lightweight.
+    private func floatingMetaPill(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(.system(.caption2, design: .rounded, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.62))
+
+            Text(value)
+                .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                .foregroundStyle(Color.white)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay {
+            Capsule()
+                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+        }
     }
 
     /// Formats a checkpoint timestamp into a compact clock string for the list.
