@@ -10,6 +10,7 @@ import SwiftUI
 
 struct TravelPhotoMapView: UIViewRepresentable {
     let photos: [TravelPhoto]
+    let mapType: MKMapType
     let selectedPhotoID: TravelPhoto.ID?
     let onSelectPhoto: (TravelPhoto.ID) -> Void
 
@@ -20,7 +21,7 @@ struct TravelPhotoMapView: UIViewRepresentable {
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView(frame: .zero)
         mapView.delegate = context.coordinator
-        mapView.mapType = .mutedStandard
+        mapView.mapType = mapType
         mapView.overrideUserInterfaceStyle = .dark
         mapView.pointOfInterestFilter = .excludingAll
         mapView.showsTraffic = false
@@ -34,6 +35,9 @@ struct TravelPhotoMapView: UIViewRepresentable {
 
     func updateUIView(_ mapView: MKMapView, context: Context) {
         context.coordinator.onSelectPhoto = onSelectPhoto
+        if mapView.mapType != mapType {
+            mapView.mapType = mapType
+        }
         syncAnnotations(on: mapView, coordinator: context.coordinator)
         syncSelection(on: mapView, coordinator: context.coordinator)
     }
@@ -221,6 +225,7 @@ private final class TravelPhotoAnnotation: NSObject, MKAnnotation {
 #Preview {
     TravelPhotoMapView(
         photos: SampleTravelPhotos.all,
+        mapType: .mutedStandard,
         selectedPhotoID: SampleTravelPhotos.all.first?.id,
         onSelectPhoto: { _ in }
     )

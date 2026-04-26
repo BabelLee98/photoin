@@ -22,7 +22,7 @@ struct HikeRouteMapView: UIViewRepresentable {
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView(frame: .zero)
         mapView.delegate = context.coordinator
-        mapView.mapType = .mutedStandard
+        mapView.mapType = .hybrid
         mapView.overrideUserInterfaceStyle = .dark
         mapView.pointOfInterestFilter = .excludingAll
         mapView.showsTraffic = false

@@ -6,12 +6,14 @@
 //
 
 import PhotosUI
+import MapKit
 import SwiftUI
 
 struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var isBottomPanelExpanded = false
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
+    @State private var mapType: MKMapType = .mutedStandard
 
     init(viewModel: HomeViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -21,6 +23,7 @@ struct HomeView: View {
         ZStack {
             TravelPhotoMapView(
                 photos: viewModel.filteredPhotos,
+                mapType: mapType,
                 selectedPhotoID: viewModel.selectedFeaturedPhotoID,
                 onSelectPhoto: viewModel.selectPhoto
             )
@@ -68,9 +71,33 @@ struct HomeView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    Spacer(minLength: 0)
+
+                    Spacer(minLength: 12)
+
+                    Button {
+                        toggleMapType()
+                    } label: {
+                        HStack(spacing: 0) {
+                            Image(systemName: mapType == .mutedStandard ? "square.2.layers.3d.top.filled" : "map")
+                                .font(.system(size: 15, weight: .semibold))
+                            Text(mapType == .mutedStandard ? "影像" : "地图")
+                                .font(.system(.footnote, design: .rounded, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.white)
+                        .padding(.horizontal, 14)
+                        .frame(height: 44)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("切换地图样式")
+                    .accessibilityHint("在普通地图和影像地图之间切换")
+                    .padding(.top, -4)
                 }
-                .padding(.top, 12)
+                .padding(.top, -4)
                 .padding(.horizontal, 16)
 
                 Spacer()
@@ -167,6 +194,11 @@ struct HomeView: View {
                 .foregroundStyle(Color.white.opacity(0.78))
         )
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// Toggles the home map between the quiet default style and a more photographic hybrid base layer.
+    private func toggleMapType() {
+        mapType = mapType == .mutedStandard ? .hybrid : .mutedStandard
     }
 }
 
