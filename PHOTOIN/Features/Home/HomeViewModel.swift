@@ -12,7 +12,8 @@ import Observation
 @Observable
 final class HomeViewModel {
     var searchText = ""
-    var isUploadPromptPresented = false
+    var isImportingPhotos = false
+    var uploadFeedbackMessage: String?
     private(set) var photos: [TravelPhoto] = []
     private(set) var recordedRoutes: [HikeRoute] = []
     private var selectedPhotoID: TravelPhoto.ID?
@@ -20,16 +21,19 @@ final class HomeViewModel {
     private let repository: any TravelPhotoRepository
     private let explorationService: TravelPhotoExplorationService
     private let hikeRouteHistoryRepository: any HikeRouteHistoryRepository
+    private let travelPhotoImporter: any TravelPhotoImporting
     private var hasLoadedPhotos = false
 
     init(
         repository: any TravelPhotoRepository,
         explorationService: TravelPhotoExplorationService,
-        hikeRouteHistoryRepository: any HikeRouteHistoryRepository
+        hikeRouteHistoryRepository: any HikeRouteHistoryRepository,
+        travelPhotoImporter: any TravelPhotoImporting
     ) {
         self.repository = repository
         self.explorationService = explorationService
         self.hikeRouteHistoryRepository = hikeRouteHistoryRepository
+        self.travelPhotoImporter = travelPhotoImporter
     }
 
     var filteredPhotos: [TravelPhoto] {
@@ -93,13 +97,33 @@ final class HomeViewModel {
         selectedPhotoID = id
     }
 
-    /// Presents the upload placeholder prompt from the home screen.
-    func presentUploadPrompt() {
-        isUploadPromptPresented = true
+    /// Imports a picker selection into the in-memory repository and refreshes the home map immediately.
+    func importSelectedPhotos(selectionCount: Int) async {
+        guard selectionCount > 0 else {
+            return
+        }
+
+        isImportingPhotos = true
+        defer { isImportingPhotos = false }
+
+        do {
+            let importedPhotos = try await travelPhotoImporter.importTravelPhotos(
+                selectionCount: selectionCount,
+                startingAt: photos.count
+            )
+
+            await repository.saveImportedTravelPhotos(importedPhotos)
+            photos = await repository.fetchTravelPhotos()
+            selectedPhotoID = importedPhotos.first?.id ?? selectedPhotoID
+            uploadFeedbackMessage = "已导入 \(importedPhotos.count) 张照片。"
+            hasLoadedPhotos = true
+        } catch {
+            uploadFeedbackMessage = error.localizedDescription.isEmpty ? "导入失败，请稍后再试。" : error.localizedDescription
+        }
     }
 
-    /// Dismisses the upload placeholder prompt after the user acknowledges it.
-    func dismissUploadPrompt() {
-        isUploadPromptPresented = false
+    /// Clears the transient upload feedback after the user acknowledges it.
+    func dismissUploadFeedback() {
+        uploadFeedbackMessage = nil
     }
 }

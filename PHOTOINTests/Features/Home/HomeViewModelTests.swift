@@ -29,7 +29,8 @@ struct HomeViewModelTests {
         let viewModel = HomeViewModel(
             repository: MockTravelPhotoRepository(photos: photos),
             explorationService: TravelPhotoExplorationService(),
-            hikeRouteHistoryRepository: MockHikeRouteHistoryRepository(routes: [])
+            hikeRouteHistoryRepository: MockHikeRouteHistoryRepository(routes: []),
+            travelPhotoImporter: MockTravelPhotoImporter()
         )
 
         await viewModel.loadPhotosIfNeeded()
@@ -55,7 +56,8 @@ struct HomeViewModelTests {
         let viewModel = HomeViewModel(
             repository: MockTravelPhotoRepository(photos: photos),
             explorationService: TravelPhotoExplorationService(),
-            hikeRouteHistoryRepository: MockHikeRouteHistoryRepository(routes: [])
+            hikeRouteHistoryRepository: MockHikeRouteHistoryRepository(routes: []),
+            travelPhotoImporter: MockTravelPhotoImporter()
         )
 
         await viewModel.loadPhotosIfNeeded()
@@ -107,7 +109,8 @@ struct HomeViewModelTests {
                         totalDistance: 0
                     )
                 ]
-            )
+            ),
+            travelPhotoImporter: MockTravelPhotoImporter()
         )
 
         await viewModel.loadPhotosIfNeeded()
@@ -117,14 +120,64 @@ struct HomeViewModelTests {
         #expect(viewModel.totalHikeCount == 1)
         #expect(viewModel.totalPhotoCount == 3)
     }
+
+    @Test func importingPhotosRefreshesHomeCollectionAndFeedback() async throws {
+        let repository = MockTravelPhotoRepository(
+            photos: [
+                TravelPhoto(
+                    locationName: "Seoul",
+                    regionName: "Korea",
+                    captureDate: "2026.04.01",
+                    coordinate: .init(latitude: 37.5665, longitude: 126.9780)
+                )
+            ]
+        )
+        let importedPhotos = [
+            TravelPhoto(
+                locationName: "待整理地点 2",
+                regionName: "未定位",
+                captureDate: "2026.04.26",
+                coordinate: .init(latitude: 39.9042, longitude: 116.4074)
+            ),
+            TravelPhoto(
+                locationName: "待整理地点 3",
+                regionName: "未定位",
+                captureDate: "2026.04.26",
+                coordinate: .init(latitude: 39.9222, longitude: 116.4254)
+            )
+        ]
+        let viewModel = HomeViewModel(
+            repository: repository,
+            explorationService: TravelPhotoExplorationService(),
+            hikeRouteHistoryRepository: MockHikeRouteHistoryRepository(routes: []),
+            travelPhotoImporter: MockTravelPhotoImporter(importedPhotos: importedPhotos)
+        )
+
+        await viewModel.loadPhotosIfNeeded()
+        await viewModel.importSelectedPhotos(selectionCount: 2)
+
+        #expect(viewModel.totalPhotoCount == 3)
+        #expect(viewModel.featuredPhoto?.id == importedPhotos.first?.id)
+        #expect(viewModel.uploadFeedbackMessage == "已导入 2 张照片。")
+    }
 }
 
-private struct MockTravelPhotoRepository: TravelPhotoRepository {
-    let photos: [TravelPhoto]
+@MainActor
+private final class MockTravelPhotoRepository: TravelPhotoRepository {
+    private var photos: [TravelPhoto]
+
+    init(photos: [TravelPhoto]) {
+        self.photos = photos
+    }
 
     /// Returns a predictable photo list for HomeViewModel tests.
     func fetchTravelPhotos() async -> [TravelPhoto] {
         photos
+    }
+
+    /// Stores imported photos in front of the existing list so tests can assert immediate home refresh behavior.
+    func saveImportedTravelPhotos(_ photos: [TravelPhoto]) async {
+        self.photos = photos + self.photos
     }
 }
 
@@ -144,5 +197,18 @@ private final class MockHikeRouteHistoryRepository: HikeRouteHistoryRepository {
     /// Stores a completed route in memory so tests can simulate shared history.
     func saveRecordedRoute(_ route: HikeRoute) {
         routes.insert(route, at: 0)
+    }
+}
+
+private struct MockTravelPhotoImporter: TravelPhotoImporting {
+    let importedPhotos: [TravelPhoto]
+
+    init(importedPhotos: [TravelPhoto] = []) {
+        self.importedPhotos = importedPhotos
+    }
+
+    /// Returns a deterministic imported collection so tests can validate the home upload flow.
+    func importTravelPhotos(selectionCount: Int, startingAt existingPhotoCount: Int) async throws -> [TravelPhoto] {
+        importedPhotos
     }
 }

@@ -5,11 +5,13 @@
 //  Created by Codex on 2026/4/6.
 //
 
+import PhotosUI
 import SwiftUI
 
 struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var isBottomPanelExpanded = false
+    @State private var selectedPhotoItems: [PhotosPickerItem] = []
 
     init(viewModel: HomeViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -94,9 +96,11 @@ struct HomeView: View {
                 HStack {
                     Spacer()
 
-                    Button {
-                        viewModel.presentUploadPrompt()
-                    } label: {
+                    PhotosPicker(
+                        selection: $selectedPhotoItems,
+                        maxSelectionCount: 20,
+                        matching: .images
+                    ) {
                         Image(systemName: "plus")
                             .font(.system(size: 28, weight: .bold))
                             .foregroundStyle(Color.white)
@@ -108,8 +112,10 @@ struct HomeView: View {
                             }
                     }
                     .buttonStyle(.plain)
+                    .disabled(viewModel.isImportingPhotos)
+                    .opacity(viewModel.isImportingPhotos ? 0.72 : 1)
                     .accessibilityLabel("上传照片")
-                    .accessibilityHint("后续将用于导入带定位的旅行照片")
+                    .accessibilityHint("将选中的照片导入到当前地图会话")
                     .padding(.trailing, 18)
                     .padding(.bottom, isBottomPanelExpanded ? 84 : 54)
                 }
@@ -122,12 +128,28 @@ struct HomeView: View {
         .onAppear {
             viewModel.refreshRecordedRoutes()
         }
-        .alert("上传功能稍后接入", isPresented: $viewModel.isUploadPromptPresented) {
+        .onChange(of: selectedPhotoItems.count) { _, newCount in
+            guard newCount > 0 else {
+                return
+            }
+
+            let importedCount = selectedPhotoItems.count
+            Task {
+                await viewModel.importSelectedPhotos(selectionCount: importedCount)
+                await MainActor.run {
+                    selectedPhotoItems.removeAll()
+                }
+            }
+        }
+        .alert("上传结果", isPresented: Binding(
+            get: { viewModel.uploadFeedbackMessage != nil },
+            set: { if $0 == false { viewModel.dismissUploadFeedback() } }
+        )) {
             Button("知道了", role: .cancel) {
-                viewModel.dismissUploadPrompt()
+                viewModel.dismissUploadFeedback()
             }
         } message: {
-            Text("这一版先把首页交互搭起来，下一步可以接系统照片库和位置信息。")
+            Text(viewModel.uploadFeedbackMessage ?? "")
         }
     }
 

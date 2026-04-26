@@ -67,7 +67,6 @@ struct HomeBottomSheetView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 24)
-                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
@@ -81,7 +80,6 @@ struct HomeBottomSheetView: View {
         .padding(.horizontal, 18)
         .padding(.top, 14)
         .padding(.bottom, 18)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .stroke(Color.white.opacity(0.22), lineWidth: 1)

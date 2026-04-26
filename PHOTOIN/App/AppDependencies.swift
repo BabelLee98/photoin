@@ -9,6 +9,7 @@ import Foundation
 
 struct AppDependencies {
     let travelPhotoRepository: any TravelPhotoRepository
+    let travelPhotoImporter: any TravelPhotoImporting
     let hikeLocationTracker: any HikeLocationTracking
     let hikeRouteHistoryRepository: any HikeRouteHistoryRepository
 
@@ -16,6 +17,7 @@ struct AppDependencies {
     static func live() -> AppDependencies {
         AppDependencies(
             travelPhotoRepository: SampleTravelPhotoRepository(),
+            travelPhotoImporter: PhotosPickerTravelPhotoImporter(),
             hikeLocationTracker: LiveHikeLocationTracker(),
             hikeRouteHistoryRepository: InMemoryHikeRouteHistoryRepository()
         )
@@ -27,7 +29,8 @@ struct AppDependencies {
         HomeViewModel(
             repository: travelPhotoRepository,
             explorationService: TravelPhotoExplorationService(),
-            hikeRouteHistoryRepository: hikeRouteHistoryRepository
+            hikeRouteHistoryRepository: hikeRouteHistoryRepository,
+            travelPhotoImporter: travelPhotoImporter
         )
     }
 
