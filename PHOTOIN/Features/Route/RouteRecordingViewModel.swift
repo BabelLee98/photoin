@@ -46,6 +46,34 @@ final class RouteRecordingViewModel {
         updatePermissionState(from: locationTracker.authorizationStatus())
     }
 
+    /// Starts a lightweight location preview so the map can center on the user's position before recording begins.
+    func prepareLocationPreview() {
+        guard trackingTask == nil else {
+            return
+        }
+
+        let authorizationStatus = locationTracker.authorizationStatus()
+        updatePermissionState(from: authorizationStatus)
+
+        guard authorizationStatus != .denied,
+              authorizationStatus != .restricted else {
+            return
+        }
+
+        beginTrackingStream()
+    }
+
+    /// Stops the preview stream when the route screen leaves the foreground, while keeping active recordings untouched.
+    func suspendLocationPreviewIfNeeded() {
+        guard route.isRecording == false else {
+            return
+        }
+
+        locationTracker.stopTracking()
+        trackingTask?.cancel()
+        trackingTask = nil
+    }
+
     /// Starts or stops the current hike depending on the existing recording state.
     func toggleRecording() {
         route.isRecording ? stopRecording() : startRecording()
@@ -154,20 +182,8 @@ final class RouteRecordingViewModel {
         }
 
         route = recordingService.startRoute(activityType: selectedActivityType)
-        latestSample = nil
         infoMessage = "\(selectedActivityType.displayName)记录已开始，等待定位点接入。"
-        trackingTask?.cancel()
-
-        let stream = locationTracker.startTracking()
-        trackingTask = Task { [weak self] in
-            guard let self else {
-                return
-            }
-
-            for await event in stream {
-                self.handle(event)
-            }
-        }
+        beginTrackingStream(resetExistingStream: latestSample == nil)
     }
 
     /// Stops the active tracking task and freezes the route summary.
@@ -231,5 +247,29 @@ final class RouteRecordingViewModel {
         }
 
         hikeRouteHistoryRepository.saveRecordedRoute(route)
+    }
+
+    /// Starts or restarts the shared location event stream used by both empty-state centering and active route recording.
+    private func beginTrackingStream(resetExistingStream: Bool = false) {
+        if resetExistingStream {
+            locationTracker.stopTracking()
+            trackingTask?.cancel()
+            trackingTask = nil
+        }
+
+        guard trackingTask == nil else {
+            return
+        }
+
+        let stream = locationTracker.startTracking()
+        trackingTask = Task { [weak self] in
+            guard let self else {
+                return
+            }
+
+            for await event in stream {
+                self.handle(event)
+            }
+        }
     }
 }

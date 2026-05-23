@@ -5,10 +5,12 @@
 //  Created by Codex on 2026/4/19.
 //
 
+import MapKit
 import SwiftUI
 
 struct RouteRecordingView: View {
     @State private var viewModel: RouteRecordingViewModel
+    @State private var mapType: MKMapType = .mutedStandard
 
     init(viewModel: RouteRecordingViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -19,6 +21,7 @@ struct RouteRecordingView: View {
             HikeRouteMapView(
                 route: viewModel.route,
                 latestSample: viewModel.latestSample,
+                mapType: mapType,
                 showsUserLocation: viewModel.permissionState != .denied
             )
             .ignoresSafeArea()
@@ -35,18 +38,19 @@ struct RouteRecordingView: View {
             .ignoresSafeArea()
             .allowsHitTesting(false)
 
-            VStack(spacing: 14) {
+            VStack(spacing: 12) {
                 topOverlay
 
-                HStack(spacing: 12) {
-                    floatingMetricCard(title: "距离", value: viewModel.formattedDistance())
-                    floatingMetricCard(title: "时长", value: viewModel.formattedDuration())
+                HStack(alignment: .firstTextBaseline, spacing: 22) {
+                    floatingMetricText(title: "距离", value: viewModel.formattedDistance())
+                    floatingMetricText(title: "时长", value: viewModel.formattedDuration())
+                    Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16)
 
                 HStack(spacing: 10) {
-                    floatingMetaPill(title: "类型", value: currentActivityType.displayName)
-                    floatingMetaPill(title: "记录点", value: "\(viewModel.route.checkpoints.count)")
+                    floatingMetaText(title: "类型", value: currentActivityType.displayName)
+                    floatingMetaText(title: "记录点", value: "\(viewModel.route.checkpoints.count)")
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16)
@@ -59,6 +63,10 @@ struct RouteRecordingView: View {
         .toolbar(.hidden, for: .navigationBar)
         .task {
             viewModel.refreshPermissionState()
+            viewModel.prepareLocationPreview()
+        }
+        .onDisappear {
+            viewModel.suspendLocationPreviewIfNeeded()
         }
         .alert("定位记录暂不可用", isPresented: Binding(
             get: { viewModel.locationErrorMessage != nil },
@@ -75,14 +83,40 @@ struct RouteRecordingView: View {
     /// Builds the top floating card so type selection and status stay visible without stealing map space.
     private var topOverlay: some View {
         VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("徒步路线")
-                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                    .foregroundStyle(Color.white)
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("徒步路线")
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        .foregroundStyle(Color.white)
 
-                Text(viewModel.statusText())
-                    .font(.system(.subheadline, design: .rounded, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.84))
+                    Text(viewModel.statusText())
+                        .font(.system(.subheadline, design: .rounded, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.84))
+                }
+
+                Spacer(minLength: 0)
+
+                Button {
+                    toggleMapType()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: mapType == .mutedStandard ? "square.2.layers.3d.top.filled" : "map")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text(mapType == .mutedStandard ? "影像" : "地图")
+                            .font(.system(.footnote, design: .rounded, weight: .semibold))
+                    }
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 14)
+                    .frame(height: 44)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("切换地图样式")
+                .accessibilityHint("在普通地图和影像地图之间切换")
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -103,12 +137,6 @@ struct RouteRecordingView: View {
                 }
                 .pickerStyle(.segmented)
             }
-        }
-        .padding(18)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(0.22), lineWidth: 1)
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -151,12 +179,6 @@ struct RouteRecordingView: View {
                 .opacity(viewModel.canAddCheckpoint() ? 1 : 0.5)
             }
         }
-        .padding(18)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(0.22), lineWidth: 1)
-        }
         .padding(.horizontal, 16)
         .padding(.bottom, 22)
     }
@@ -166,8 +188,8 @@ struct RouteRecordingView: View {
         viewModel.route.isRecording ? viewModel.route.activityType : viewModel.selectedActivityType
     }
 
-    /// Renders the prominent floating metric cards used for timing and distance on top of the map.
-    private func floatingMetricCard(title: String, value: String) -> some View {
+    /// Renders the prominent floating route metrics without enclosing cards so the map stays visually open.
+    private func floatingMetricText(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(.caption, design: .rounded, weight: .medium))
@@ -177,32 +199,18 @@ struct RouteRecordingView: View {
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .foregroundStyle(Color.white)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.white.opacity(0.18), lineWidth: 1)
-        }
     }
 
-    /// Renders a smaller metadata pill so route type and checkpoint count stay visible but lightweight.
-    private func floatingMetaPill(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+    /// Renders lightweight metadata copy directly over the map instead of using pill-shaped containers.
+    private func floatingMetaText(title: String, value: String) -> some View {
+        HStack(spacing: 5) {
             Text(title)
-                .font(.system(.caption2, design: .rounded, weight: .semibold))
+                .font(.system(.footnote, design: .rounded, weight: .medium))
                 .foregroundStyle(Color.white.opacity(0.62))
 
             Text(value)
                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
                 .foregroundStyle(Color.white)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay {
-            Capsule()
-                .stroke(Color.white.opacity(0.18), lineWidth: 1)
         }
     }
 
@@ -217,6 +225,11 @@ struct RouteRecordingView: View {
     private func formattedCoordinate(_ coordinate: HikeCoordinate) -> String {
         String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
     }
+
+    /// Toggles the route map between the quiet standard base and the photographic hybrid layer.
+    private func toggleMapType() {
+        mapType = mapType == .mutedStandard ? .hybrid : .mutedStandard
+    }
 }
 
 private struct RoutePrimaryButtonStyle: ButtonStyle {
@@ -229,11 +242,16 @@ private struct RoutePrimaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(
-                isRecording
-                ? Color(red: 0.24, green: 0.28, blue: 0.31)
-                : Color(red: 0.18, green: 0.22, blue: 0.24),
+                .ultraThinMaterial,
                 in: RoundedRectangle(cornerRadius: 18, style: .continuous)
             )
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(
+                        isRecording ? Color.white.opacity(0.34) : Color.white.opacity(0.22),
+                        lineWidth: 1
+                    )
+            }
             .opacity(configuration.isPressed ? 0.88 : 1)
     }
 }
@@ -242,13 +260,13 @@ private struct RouteSecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(.headline, design: .rounded, weight: .semibold))
-            .foregroundStyle(Color(red: 0.2, green: 0.24, blue: 0.26))
+            .foregroundStyle(Color.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(Color.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.white.opacity(0.68), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.22), lineWidth: 1)
             }
             .opacity(configuration.isPressed ? 0.88 : 1)
     }

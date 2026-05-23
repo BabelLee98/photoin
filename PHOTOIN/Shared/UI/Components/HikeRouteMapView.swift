@@ -11,9 +11,10 @@ import SwiftUI
 struct HikeRouteMapView: UIViewRepresentable {
     let route: HikeRoute
     let latestSample: HikeLocationSample?
+    let mapType: MKMapType
     let showsUserLocation: Bool
 
-    private static let beijingCenter = CLLocationCoordinate2D(latitude: 39.9042, longitude: 116.4074)
+    private static let shanghaiCenter = CLLocationCoordinate2D(latitude: 31.2304, longitude: 121.4737)
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -22,7 +23,7 @@ struct HikeRouteMapView: UIViewRepresentable {
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView(frame: .zero)
         mapView.delegate = context.coordinator
-        mapView.mapType = .hybrid
+        mapView.mapType = mapType
         mapView.overrideUserInterfaceStyle = .dark
         mapView.pointOfInterestFilter = .excludingAll
         mapView.showsTraffic = false
@@ -36,6 +37,9 @@ struct HikeRouteMapView: UIViewRepresentable {
     }
 
     func updateUIView(_ mapView: MKMapView, context: Context) {
+        if mapView.mapType != mapType {
+            mapView.mapType = mapType
+        }
         mapView.showsUserLocation = showsUserLocation
         context.coordinator.showsUserLocation = showsUserLocation
         context.coordinator.shouldCenterOnUserLocationWhenEmpty = route.points.isEmpty && route.checkpoints.isEmpty && latestSample == nil
@@ -110,7 +114,7 @@ struct HikeRouteMapView: UIViewRepresentable {
         }
     }
 
-    /// Applies the empty-state center rule: user location when authorized, otherwise Beijing.
+    /// Applies the empty-state center rule: user location when authorized, otherwise Shanghai.
     private func updateDefaultRegionIfNeeded(on mapView: MKMapView, coordinator: Coordinator) {
         guard route.points.isEmpty, route.checkpoints.isEmpty, latestSample == nil else {
             return
@@ -124,18 +128,18 @@ struct HikeRouteMapView: UIViewRepresentable {
             return
         }
 
-        guard coordinator.emptyStateCenter != .beijing else {
+        guard coordinator.emptyStateCenter != .shanghai else {
             return
         }
 
-        mapView.setRegion(Self.region(around: Self.beijingCenter), animated: false)
-        coordinator.emptyStateCenter = .beijing
+        mapView.setRegion(Self.region(around: Self.shanghaiCenter), animated: false)
+        coordinator.emptyStateCenter = .shanghai
     }
 
     /// Builds the initial 3-kilometer region used before the map has enough route content to fit.
     private func defaultRegion() -> MKCoordinateRegion {
         let center = route.latestCoordinate?.clCoordinate
-            ?? Self.beijingCenter
+            ?? Self.shanghaiCenter
 
         return Self.region(around: center)
     }
@@ -153,7 +157,7 @@ struct HikeRouteMapView: UIViewRepresentable {
         static let checkpointReuseIdentifier = "HikeCheckpointMarker"
 
         enum EmptyStateCenter {
-            case beijing
+            case shanghai
             case userLocation
         }
 
@@ -245,6 +249,7 @@ private final class HikeCheckpointAnnotation: NSObject, MKAnnotation {
     HikeRouteMapView(
         route: .empty,
         latestSample: nil,
+        mapType: .mutedStandard,
         showsUserLocation: false
     )
     .frame(height: 360)
