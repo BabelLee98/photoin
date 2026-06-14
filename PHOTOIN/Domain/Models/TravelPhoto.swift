@@ -14,18 +14,21 @@ struct TravelPhoto: Identifiable {
     let regionName: String
     let captureDate: String
     let coordinate: CLLocationCoordinate2D
+    let previewImageData: Data?
 
     init(
         id: UUID = UUID(),
         locationName: String,
         regionName: String,
         captureDate: String,
-        coordinate: CLLocationCoordinate2D
+        coordinate: CLLocationCoordinate2D,
+        previewImageData: Data? = nil
     ) {
         self.id = id
         self.locationName = locationName
         self.regionName = regionName
         self.captureDate = captureDate
         self.coordinate = coordinate
+        self.previewImageData = previewImageData
     }
 }

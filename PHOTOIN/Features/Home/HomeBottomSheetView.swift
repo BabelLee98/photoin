@@ -9,45 +9,51 @@ import SwiftUI
 
 struct HomeBottomSheetView: View {
     let featuredPhoto: TravelPhoto?
+    let relatedPhotos: [TravelPhoto]
     let locationCount: Int
     @Binding var isExpanded: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Button {
-                isExpanded.toggle()
-            } label: {
-                VStack(spacing: 10) {
-                    Capsule()
-                        .fill(Color.white.opacity(0.42))
-                        .frame(width: 42, height: 5)
+            VStack(spacing: 10) {
+                Capsule()
+                    .fill(Color.white.opacity(0.42))
+                    .frame(width: 42, height: 5)
 
-                    HStack(alignment: .center, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(sheetTitle)
-                                .font(.system(.headline, design: .rounded, weight: .semibold))
-                                .foregroundStyle(Color.white)
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(sheetTitle)
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
+                            .foregroundStyle(Color.white)
 
-                            Text(sheetSubtitle)
-                                .font(.system(.subheadline, design: .rounded, weight: .medium))
-                                .foregroundStyle(Color.white.opacity(0.84))
-                        }
-
-                        Spacer()
-
-                        Image(systemName: isExpanded ? "chevron.down" : "chevron.up")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Color.white.opacity(0.88))
+                        Text(sheetSubtitle)
+                            .font(.system(.subheadline, design: .rounded, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.84))
                     }
+
+                    Spacer()
+
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.up")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.white.opacity(0.88))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .buttonStyle(.plain)
             .accessibilityLabel(isExpanded ? "收起地点信息" : "展开地点信息")
             .accessibilityHint("查看当前选中地点的照片和地图摘要")
 
             if isExpanded {
-                if let featuredPhoto {
+                if relatedPhotos.isEmpty == false {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(relatedPhotos) { photo in
+                                FeaturedPhotoCardView(photo: photo)
+                                    .frame(width: 244)
+                            }
+                        }
+                        .padding(.horizontal, 2)
+                    }
+                } else if let featuredPhoto {
                     FeaturedPhotoCardView(photo: featuredPhoto)
                 } else {
                     VStack(spacing: 10) {
@@ -80,6 +86,10 @@ struct HomeBottomSheetView: View {
         .padding(.horizontal, 18)
         .padding(.top, 14)
         .padding(.bottom, 18)
+        .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .onTapGesture {
+            isExpanded.toggle()
+        }
         .overlay {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .stroke(Color.white.opacity(0.22), lineWidth: 1)

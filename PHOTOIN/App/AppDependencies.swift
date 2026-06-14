@@ -19,7 +19,7 @@ struct AppDependencies {
             travelPhotoRepository: SampleTravelPhotoRepository(),
             travelPhotoImporter: PhotosPickerTravelPhotoImporter(),
             hikeLocationTracker: LiveHikeLocationTracker(),
-            hikeRouteHistoryRepository: InMemoryHikeRouteHistoryRepository()
+            hikeRouteHistoryRepository: PersistentHikeRouteHistoryRepository()
         )
     }
 
@@ -40,6 +40,15 @@ struct AppDependencies {
         RouteRecordingViewModel(
             locationTracker: hikeLocationTracker,
             recordingService: HikeRouteRecordingService(),
+            hikeRouteHistoryRepository: hikeRouteHistoryRepository
+        )
+    }
+
+    /// Creates the profile feature model with access to the app's persisted photos and route history.
+    @MainActor
+    func makeProfileViewModel() -> ProfileViewModel {
+        ProfileViewModel(
+            travelPhotoRepository: travelPhotoRepository,
             hikeRouteHistoryRepository: hikeRouteHistoryRepository
         )
     }

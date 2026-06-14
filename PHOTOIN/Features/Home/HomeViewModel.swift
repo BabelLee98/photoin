@@ -97,9 +97,9 @@ final class HomeViewModel {
         selectedPhotoID = id
     }
 
-    /// Imports a picker selection into the in-memory repository and refreshes the home map immediately.
-    func importSelectedPhotos(selectionCount: Int) async {
-        guard selectionCount > 0 else {
+    /// Imports loaded image payloads into the repository and refreshes the home map immediately.
+    func importSelectedPhotos(_ items: [TravelPhotoImportItem]) async {
+        guard items.isEmpty == false else {
             return
         }
 
@@ -108,7 +108,7 @@ final class HomeViewModel {
 
         do {
             let importedPhotos = try await travelPhotoImporter.importTravelPhotos(
-                selectionCount: selectionCount,
+                from: items,
                 startingAt: photos.count
             )
 

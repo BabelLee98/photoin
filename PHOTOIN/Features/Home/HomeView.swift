@@ -105,6 +105,7 @@ struct HomeView: View {
                 HStack(alignment: .bottom, spacing: 0) {
                     HomeBottomSheetView(
                         featuredPhoto: viewModel.featuredPhoto,
+                        relatedPhotos: relatedPhotosForCurrentLocation(),
                         locationCount: viewModel.filteredPhotos.count,
                         isExpanded: $isBottomPanelExpanded
                     )
@@ -115,6 +116,7 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 22)
+                .zIndex(2)
             }
 
             VStack {
@@ -147,6 +149,7 @@ struct HomeView: View {
                     .padding(.bottom, isBottomPanelExpanded ? 84 : 54)
                 }
             }
+            .zIndex(1)
         }
         .toolbar(.hidden, for: .navigationBar)
         .task {
@@ -160,9 +163,10 @@ struct HomeView: View {
                 return
             }
 
-            let importedCount = selectedPhotoItems.count
+            let itemsToImport = selectedPhotoItems
             Task {
-                await viewModel.importSelectedPhotos(selectionCount: importedCount)
+                let importedItems = await loadSelectedImportItems(from: itemsToImport)
+                await viewModel.importSelectedPhotos(importedItems)
                 await MainActor.run {
                     selectedPhotoItems.removeAll()
                 }
@@ -196,9 +200,41 @@ struct HomeView: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
+    /// Loads both image payloads and stable asset identifiers so the importer can resolve real photo metadata.
+    private func loadSelectedImportItems(from items: [PhotosPickerItem]) async -> [TravelPhotoImportItem] {
+        var importedItems: [TravelPhotoImportItem] = []
+
+        for item in items {
+            guard let imageData = try? await item.loadTransferable(type: Data.self) else {
+                continue
+            }
+
+            importedItems.append(
+                TravelPhotoImportItem(
+                    imageData: imageData,
+                    assetIdentifier: item.itemIdentifier
+                )
+            )
+        }
+
+        return importedItems
+    }
+
     /// Toggles the home map between the quiet default style and a more photographic hybrid base layer.
     private func toggleMapType() {
         mapType = mapType == .mutedStandard ? .hybrid : .mutedStandard
+    }
+
+    /// Returns every currently filtered photo that belongs to the selected location so the bottom sheet can show a swipeable gallery.
+    private func relatedPhotosForCurrentLocation() -> [TravelPhoto] {
+        guard let featuredPhoto = viewModel.featuredPhoto else {
+            return []
+        }
+
+        return viewModel.filteredPhotos.filter {
+            $0.locationName == featuredPhoto.locationName &&
+            $0.regionName == featuredPhoto.regionName
+        }
     }
 }
 

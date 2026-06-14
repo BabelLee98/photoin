@@ -27,7 +27,7 @@ struct RootTabView: View {
             }
 
             NavigationStack {
-                ProfileView()
+                ProfileView(viewModel: dependencies.makeProfileViewModel())
             }
             .tabItem {
                 Label("", systemImage: "person.crop.circle")

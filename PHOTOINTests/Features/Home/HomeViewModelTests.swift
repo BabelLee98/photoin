@@ -154,7 +154,10 @@ struct HomeViewModelTests {
         )
 
         await viewModel.loadPhotosIfNeeded()
-        await viewModel.importSelectedPhotos(selectionCount: 2)
+        await viewModel.importSelectedPhotos([
+            TravelPhotoImportItem(imageData: Data([0x01]), assetIdentifier: "asset-1"),
+            TravelPhotoImportItem(imageData: Data([0x02]), assetIdentifier: "asset-2")
+        ])
 
         #expect(viewModel.totalPhotoCount == 3)
         #expect(viewModel.featuredPhoto?.id == importedPhotos.first?.id)
@@ -208,7 +211,7 @@ private struct MockTravelPhotoImporter: TravelPhotoImporting {
     }
 
     /// Returns a deterministic imported collection so tests can validate the home upload flow.
-    func importTravelPhotos(selectionCount: Int, startingAt existingPhotoCount: Int) async throws -> [TravelPhoto] {
+    func importTravelPhotos(from items: [TravelPhotoImportItem], startingAt existingPhotoCount: Int) async throws -> [TravelPhoto] {
         importedPhotos
     }
 }

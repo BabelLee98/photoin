@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct FeaturedPhotoCardView: View {
     let photo: TravelPhoto
@@ -13,7 +14,28 @@ struct FeaturedPhotoCardView: View {
     var body: some View {
         let markerStyle = HomePhotoMarkerStyleProvider.style(for: photo)
 
-        HStack(spacing: 14) {
+        previewImage(for: markerStyle)
+            .frame(maxWidth: .infinity)
+            .frame(height: 196)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(Color.white.opacity(0.22), lineWidth: 1)
+        }
+    }
+
+    /// Renders a real imported thumbnail when available, otherwise falls back to the existing styled marker block.
+    @ViewBuilder
+    private func previewImage(for markerStyle: HomePhotoMarkerStyle) -> some View {
+        if let previewImageData = photo.previewImageData,
+           let uiImage = UIImage(data: previewImageData) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity)
+                .frame(height: 196)
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        } else {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(
                     LinearGradient(
@@ -25,38 +47,13 @@ struct FeaturedPhotoCardView: View {
                         endPoint: .bottomTrailing
                     )
                 )
-                .frame(width: 96, height: 96)
+                .frame(maxWidth: .infinity)
+                .frame(height: 196)
                 .overlay {
                     Image(systemName: markerStyle.symbolName)
-                        .font(.system(size: 28, weight: .medium))
+                        .font(.system(size: 34, weight: .medium))
                         .foregroundStyle(.white.opacity(0.96))
                 }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(photo.locationName)
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
-                    .foregroundStyle(Color.white)
-
-                Text(photo.regionName)
-                    .font(.system(.subheadline, design: .rounded, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.84))
-
-                Text("拍摄于 \(photo.captureDate)")
-                    .font(.system(.footnote, design: .rounded, weight: .regular))
-                    .foregroundStyle(Color.white.opacity(0.72))
-
-                Label("已定位保存", systemImage: "location.fill")
-                    .font(.system(.footnote, design: .rounded, weight: .medium))
-                    .foregroundStyle(markerStyle.accentColor)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(18)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(0.22), lineWidth: 1)
         }
     }
 }
