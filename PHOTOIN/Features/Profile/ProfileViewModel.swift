@@ -38,6 +38,7 @@ final class ProfileViewModel {
     var routes: [HikeRoute] = []
     var exportDocument: ExportDocument?
     var exportErrorMessage: String?
+    var deleteFeedbackMessage: String?
 
     private let travelPhotoRepository: any TravelPhotoRepository
     private let hikeRouteHistoryRepository: any HikeRouteHistoryRepository
@@ -138,6 +139,17 @@ final class ProfileViewModel {
         routes = hikeRouteHistoryRepository.fetchRecordedRoutes()
     }
 
+    /// Deletes one imported photo and refreshes profile aggregates so gallery, locations, and counts stay aligned.
+    func deleteImportedPhoto(id: TravelPhoto.ID) async {
+        let didDelete = await travelPhotoRepository.deleteImportedTravelPhoto(id: id)
+        guard didDelete else {
+            deleteFeedbackMessage = "这张照片不是导入内容，暂时不能删除。"
+            return
+        }
+
+        await reloadContent()
+    }
+
     /// Builds a shareable JSON snapshot of the current photos and hiking history.
     func prepareExportDocument() async {
         await reloadContent()
@@ -193,6 +205,11 @@ final class ProfileViewModel {
     /// Clears the one-shot export feedback after the user dismisses the alert.
     func dismissExportError() {
         exportErrorMessage = nil
+    }
+
+    /// Clears the one-shot delete feedback after the user acknowledges it.
+    func dismissDeleteFeedback() {
+        deleteFeedbackMessage = nil
     }
 
     /// Releases the generated export document after the file exporter finishes.

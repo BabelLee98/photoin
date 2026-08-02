@@ -182,6 +182,16 @@ private final class MockTravelPhotoRepository: TravelPhotoRepository {
     func saveImportedTravelPhotos(_ photos: [TravelPhoto]) async {
         self.photos = photos + self.photos
     }
+
+    /// Removes a photo from the mock repository when tests need to simulate user-deleted imports.
+    func deleteImportedTravelPhoto(id: TravelPhoto.ID) async -> Bool {
+        guard photos.contains(where: { $0.id == id }) else {
+            return false
+        }
+
+        photos.removeAll { $0.id == id }
+        return true
+    }
 }
 
 @MainActor

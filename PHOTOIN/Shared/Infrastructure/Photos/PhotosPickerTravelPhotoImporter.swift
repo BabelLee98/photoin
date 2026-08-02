@@ -36,11 +36,12 @@ struct PhotosPickerTravelPhotoImporter: TravelPhotoImporting {
             throw ImportError.emptySelection
         }
 
+        let photoLibraryStatus = await requestPhotoLibraryAccessIfNeeded()
         var importedPhotos: [TravelPhoto] = []
 
         for (offset, item) in items.enumerated() {
             let sequence = existingPhotoCount + offset + 1
-            let metadata = metadata(for: item)
+            let metadata = metadata(for: item, photoLibraryStatus: photoLibraryStatus)
             let coordinate = metadata.coordinate ?? fallbackCoordinate(for: sequence)
             let placeSummary = await resolvePlaceSummary(for: coordinate, sequence: sequence, hasLocation: metadata.coordinate != nil)
 
@@ -62,14 +63,30 @@ struct PhotosPickerTravelPhotoImporter: TravelPhotoImporting {
         return importedPhotos
     }
 
+    /// Requests read access so imported markers can use the same asset location shown in the system Photos app.
+    private func requestPhotoLibraryAccessIfNeeded() async -> PHAuthorizationStatus {
+        let currentStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard currentStatus == .notDetermined else {
+            return currentStatus
+        }
+
+        return await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+    }
+
     /// Reads metadata from the Photos asset first, then falls back to the image's embedded EXIF and GPS dictionaries.
-    private func metadata(for item: TravelPhotoImportItem) -> PhotoMetadata {
-        if let assetIdentifier = item.assetIdentifier,
+    private func metadata(for item: TravelPhotoImportItem, photoLibraryStatus: PHAuthorizationStatus) -> PhotoMetadata {
+        if canReadPhotoLibraryAssets(status: photoLibraryStatus),
+           let assetIdentifier = item.assetIdentifier,
            let assetMetadata = assetMetadata(for: assetIdentifier) {
             return assetMetadata
         }
 
         return imageMetadata(from: item.imageData)
+    }
+
+    /// Treats full and limited library access as enough to resolve selected asset metadata from Photos.
+    private func canReadPhotoLibraryAssets(status: PHAuthorizationStatus) -> Bool {
+        status == .authorized || status == .limited
     }
 
     /// Fetches creation date and location from the selected Photos asset when the picker provides a local identifier.

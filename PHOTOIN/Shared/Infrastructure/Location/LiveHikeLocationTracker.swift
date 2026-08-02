@@ -13,12 +13,15 @@ final class LiveHikeLocationTracker: NSObject, HikeLocationTracking {
     private let locationManager = CLLocationManager()
     private var continuation: AsyncStream<HikeLocationTrackingEvent>.Continuation?
     private var isTracking = false
+    private let maximumLocationAge: TimeInterval = 20
 
     override init() {
         super.init()
         locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
         locationManager.distanceFilter = 2
+        locationManager.activityType = .fitness
+        locationManager.pausesLocationUpdatesAutomatically = false
     }
 
     /// Returns the current Core Location authorization status.
@@ -93,11 +96,21 @@ extension LiveHikeLocationTracker: CLLocationManagerDelegate {
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         locations.forEach { location in
+            guard isRecent(location) else {
+                return
+            }
+
             continuation?.yield(.locationUpdated(HikeLocationSample(location: location)))
         }
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         continuation?.yield(.failed(error.localizedDescription))
+    }
+
+    /// Drops cached or future-skewed Core Location samples before they can pull the route away from the current trail.
+    private func isRecent(_ location: CLLocation) -> Bool {
+        let age = -location.timestamp.timeIntervalSinceNow
+        return age >= 0 && age <= maximumLocationAge
     }
 }

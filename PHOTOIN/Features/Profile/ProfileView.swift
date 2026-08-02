@@ -43,7 +43,10 @@ struct ProfileView: View {
 
             Section("内容") {
                 NavigationLink {
-                    ProfilePhotoLibraryView(photos: viewModel.photos)
+                    ProfilePhotoLibraryView(
+                        photos: viewModel.photos,
+                        onDeleteConfirmed: deleteImportedPhoto
+                    )
                 } label: {
                     Label("全部照片", systemImage: "photo.on.rectangle.angled")
                 }
@@ -118,6 +121,16 @@ struct ProfileView: View {
         } message: {
             Text(viewModel.exportErrorMessage ?? "")
         }
+        .alert("删除提示", isPresented: Binding(
+            get: { viewModel.deleteFeedbackMessage != nil },
+            set: { if $0 == false { viewModel.dismissDeleteFeedback() } }
+        )) {
+            Button("知道了", role: .cancel) {
+                viewModel.dismissDeleteFeedback()
+            }
+        } message: {
+            Text(viewModel.deleteFeedbackMessage ?? "")
+        }
         .fileExporter(
             isPresented: $isExporting,
             document: viewModel.exportDocument,
@@ -135,6 +148,14 @@ struct ProfileView: View {
         }
 
         openURL(settingsURL)
+    }
+
+    /// Deletes a confirmed imported photo from the shared repository used by profile and home.
+    private func deleteImportedPhoto(_ photo: TravelPhoto) {
+        let photoID = photo.id
+        Task {
+            await viewModel.deleteImportedPhoto(id: photoID)
+        }
     }
 }
 
@@ -160,6 +181,9 @@ private struct ProfileSummaryChip: View {
 
 private struct ProfilePhotoLibraryView: View {
     let photos: [TravelPhoto]
+    let onDeleteConfirmed: (TravelPhoto) -> Void
+    @State private var photoPendingDeletion: TravelPhoto?
+    @State private var isShowingDeleteConfirmation = false
     private let columns = [GridItem(.adaptive(minimum: 144), spacing: 12)]
 
     var body: some View {
@@ -173,9 +197,26 @@ private struct ProfilePhotoLibraryView: View {
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(photos) { photo in
                         VStack(alignment: .leading, spacing: 10) {
-                            ProfilePhotoThumbnail(photo: photo)
-                                .frame(height: 142)
-                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            ZStack(alignment: .topTrailing) {
+                                ProfilePhotoThumbnail(photo: photo)
+                                    .frame(height: 142)
+                                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+                                if photo.previewImageData != nil {
+                                    Button("删除照片", systemImage: "trash", action: { requestPhotoDeletion(photo) })
+                                        .labelStyle(.iconOnly)
+                                        .font(.system(.caption, design: .rounded, weight: .bold))
+                                        .foregroundStyle(Color.white)
+                                        .frame(width: 34, height: 34)
+                                        .background(.ultraThinMaterial, in: Circle())
+                                        .overlay {
+                                            Circle()
+                                                .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                                        }
+                                        .padding(8)
+                                        .accessibilityHint("从 PHOTOIN 的导入记录中删除这张照片")
+                                }
+                            }
 
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(photo.locationName)
@@ -202,6 +243,38 @@ private struct ProfilePhotoLibraryView: View {
         .background(Color(red: 0.94, green: 0.95, blue: 0.93))
         .navigationTitle("全部照片")
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(
+            "删除这张照片？",
+            isPresented: $isShowingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("删除照片", role: .destructive, action: deletePendingPhoto)
+            Button("取消", role: .cancel, action: clearPendingDeletion)
+        } message: {
+            Text("这会从 PHOTOIN 的导入记录中移除照片，不会删除系统相册里的原图。")
+        }
+    }
+
+    /// Stores the selected imported photo inside this gallery so the confirmation appears on the current screen.
+    private func requestPhotoDeletion(_ photo: TravelPhoto) {
+        photoPendingDeletion = photo
+        isShowingDeleteConfirmation = true
+    }
+
+    /// Sends the confirmed photo back to the parent view for repository deletion.
+    private func deletePendingPhoto() {
+        guard let photoPendingDeletion else {
+            return
+        }
+
+        onDeleteConfirmed(photoPendingDeletion)
+        clearPendingDeletion()
+    }
+
+    /// Clears the transient delete selection used by the gallery confirmation dialog.
+    private func clearPendingDeletion() {
+        photoPendingDeletion = nil
+        isShowingDeleteConfirmation = false
     }
 }
 

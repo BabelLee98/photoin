@@ -124,6 +124,7 @@ struct TravelPhotoMapView: UIViewRepresentable {
         var onSelectPhoto: (TravelPhoto.ID) -> Void
         var selectedPhotoID: TravelPhoto.ID?
         var lastRenderedPhotoIDs: [TravelPhoto.ID] = []
+        private var thumbnailCache: [String: UIImage] = [:]
 
         init(onSelectPhoto: @escaping (TravelPhoto.ID) -> Void) {
             self.onSelectPhoto = onSelectPhoto
@@ -186,18 +187,56 @@ struct TravelPhotoMapView: UIViewRepresentable {
         private func configure(_ markerView: MKMarkerAnnotationView, for photo: TravelPhoto, isSelected: Bool) {
             let markerStyle = HomePhotoMarkerStyleProvider.style(for: photo)
             let configuration = UIImage.SymbolConfiguration(pointSize: isSelected ? 15 : 13, weight: .semibold)
+            let photoGlyphImage = thumbnailImage(for: photo, isSelected: isSelected)
 
             markerView.canShowCallout = false
             markerView.animatesWhenAdded = true
             markerView.markerTintColor = UIColor(markerStyle.accentColor)
-            markerView.glyphImage = UIImage(systemName: markerStyle.symbolName, withConfiguration: configuration)
-            markerView.glyphTintColor = .white
+            markerView.glyphImage = photoGlyphImage ?? UIImage(systemName: markerStyle.symbolName, withConfiguration: configuration)
+            markerView.glyphTintColor = photoGlyphImage == nil ? .white : nil
             markerView.displayPriority = isSelected ? .required : .defaultHigh
             markerView.transform = isSelected ? CGAffineTransform(scaleX: 1.14, y: 1.14) : .identity
             markerView.layer.shadowColor = UIColor.black.cgColor
             markerView.layer.shadowOpacity = isSelected ? 0.24 : 0.14
             markerView.layer.shadowRadius = isSelected ? 10 : 6
             markerView.layer.shadowOffset = CGSize(width: 0, height: 4)
+        }
+
+        /// Builds a small circular photo glyph so imported photos are visible directly inside their map bubbles.
+        private func thumbnailImage(for photo: TravelPhoto, isSelected: Bool) -> UIImage? {
+            let cacheKey = "\(photo.id.uuidString)-\(isSelected ? "selected" : "normal")"
+            if let cachedImage = thumbnailCache[cacheKey] {
+                return cachedImage
+            }
+
+            guard let previewImageData = photo.previewImageData,
+                  let sourceImage = UIImage(data: previewImageData) else {
+                return nil
+            }
+
+            let sideLength = isSelected ? 30.0 : 26.0
+            let size = CGSize(width: sideLength, height: sideLength)
+            let renderer = UIGraphicsImageRenderer(size: size)
+            let image = renderer.image { context in
+                let rect = CGRect(origin: .zero, size: size)
+                UIBezierPath(ovalIn: rect).addClip()
+
+                let scale = max(size.width / sourceImage.size.width, size.height / sourceImage.size.height)
+                let drawSize = CGSize(width: sourceImage.size.width * scale, height: sourceImage.size.height * scale)
+                let drawOrigin = CGPoint(
+                    x: (size.width - drawSize.width) / 2,
+                    y: (size.height - drawSize.height) / 2
+                )
+                sourceImage.draw(in: CGRect(origin: drawOrigin, size: drawSize))
+
+                UIColor.white.withAlphaComponent(0.9).setStroke()
+                context.cgContext.setLineWidth(2)
+                context.cgContext.strokeEllipse(in: rect.insetBy(dx: 1, dy: 1))
+            }
+            .withRenderingMode(.alwaysOriginal)
+
+            thumbnailCache[cacheKey] = image
+            return image
         }
     }
 }

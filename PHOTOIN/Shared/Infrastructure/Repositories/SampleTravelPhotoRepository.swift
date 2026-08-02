@@ -13,10 +13,10 @@ final class SampleTravelPhotoRepository: TravelPhotoRepository {
     private var photos: [TravelPhoto] = []
 
     init() {
-        photos = persistence.loadImportedPhotos() + SampleTravelPhotos.all
+        photos = persistence.loadImportedPhotos()
     }
 
-    /// Returns the sample travel photos used until the real photo import pipeline is connected.
+    /// Returns the photos imported by the user and restored from local persistence.
     func fetchTravelPhotos() async -> [TravelPhoto] {
         photos
     }
@@ -24,12 +24,18 @@ final class SampleTravelPhotoRepository: TravelPhotoRepository {
     /// Appends imported photos to the session store and persists them so the next app launch can restore the same home map state.
     func saveImportedTravelPhotos(_ photos: [TravelPhoto]) async {
         self.photos = photos + self.photos
-        persistence.saveImportedPhotos(extractImportedPhotos())
+        persistence.saveImportedPhotos(photos)
     }
 
-    /// Returns only the user-imported photos so the sample fixture list is not duplicated in persistence.
-    private func extractImportedPhotos() -> [TravelPhoto] {
-        Array(photos.prefix(max(0, photos.count - SampleTravelPhotos.all.count)))
+    /// Removes a persisted imported photo and updates the local photo store.
+    func deleteImportedTravelPhoto(id: TravelPhoto.ID) async -> Bool {
+        guard photos.contains(where: { $0.id == id }) else {
+            return false
+        }
+
+        photos.removeAll { $0.id == id }
+        persistence.saveImportedPhotos(photos)
+        return true
     }
 }
 

@@ -10,7 +10,8 @@ import Foundation
 
 struct HikeRouteRecordingService {
     private let minimumPointDistance: CLLocationDistance = 4
-    private let maximumAcceptedAccuracy: CLLocationAccuracy = 65
+    private let maximumAcceptedAccuracy: CLLocationAccuracy = 35
+    private let maximumAcceptedTravelSpeed: CLLocationSpeed = 8
 
     /// Starts a fresh route session when the user taps the record button.
     func startRoute(activityType: HikeRoute.ActivityType, at date: Date = .now) -> HikeRoute {
@@ -55,6 +56,10 @@ struct HikeRouteRecordingService {
 
         let segmentDistance = distance(from: lastPoint.coordinate, to: sample.coordinate)
         guard segmentDistance >= minimumPointDistance else {
+            return route
+        }
+
+        guard isPlausibleMovement(distance: segmentDistance, from: lastPoint.timestamp, to: sample.timestamp) else {
             return route
         }
 
@@ -135,6 +140,20 @@ struct HikeRouteRecordingService {
             checkpoints: route.checkpoints,
             totalDistance: route.totalDistance + segmentDistance
         )
+    }
+
+    /// Rejects sudden GPS jumps that would require movement faster than a realistic hiking pace.
+    private func isPlausibleMovement(
+        distance: CLLocationDistance,
+        from previousTimestamp: Date,
+        to currentTimestamp: Date
+    ) -> Bool {
+        let elapsedTime = currentTimestamp.timeIntervalSince(previousTimestamp)
+        guard elapsedTime > 0 else {
+            return false
+        }
+
+        return distance / elapsedTime <= maximumAcceptedTravelSpeed
     }
 
     /// Calculates line-segment distance between two recorded coordinates.

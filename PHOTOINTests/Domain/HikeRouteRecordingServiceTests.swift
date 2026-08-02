@@ -37,7 +37,7 @@ struct HikeRouteRecordingServiceTests {
         )
         let movingSample = HikeLocationSample(
             coordinate: HikeCoordinate(latitude: 31.2314, longitude: 121.4752),
-            timestamp: Date(timeIntervalSince1970: 1_030),
+            timestamp: Date(timeIntervalSince1970: 1_050),
             horizontalAccuracy: 10
         )
 
@@ -89,5 +89,26 @@ struct HikeRouteRecordingServiceTests {
         #expect(firstUpdate.points.count == 1)
         #expect(walkingUpdate.points.count == 2)
         #expect(walkingUpdate.totalDistance > 0)
+    }
+
+    @Test func appendLocationIgnoresSuddenGPSJumps() async throws {
+        let startedRoute = service.startRoute(activityType: .hike, at: Date(timeIntervalSince1970: 3_000))
+        let firstSample = HikeLocationSample(
+            coordinate: HikeCoordinate(latitude: 31.2304, longitude: 121.4737),
+            timestamp: Date(timeIntervalSince1970: 3_010),
+            horizontalAccuracy: 6
+        )
+        let jumpSample = HikeLocationSample(
+            coordinate: HikeCoordinate(latitude: 31.2504, longitude: 121.4937),
+            timestamp: Date(timeIntervalSince1970: 3_020),
+            horizontalAccuracy: 8
+        )
+
+        let firstUpdate = service.appendLocation(firstSample, to: startedRoute)
+        let ignoredUpdate = service.appendLocation(jumpSample, to: firstUpdate)
+
+        #expect(firstUpdate.points.count == 1)
+        #expect(ignoredUpdate.points.count == 1)
+        #expect(ignoredUpdate.totalDistance == 0)
     }
 }

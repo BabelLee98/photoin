@@ -79,12 +79,21 @@ final class HomeViewModel {
             return
         }
 
-        photos = await repository.fetchTravelPhotos()
+        await reloadPhotos()
         refreshRecordedRoutes()
         if selectedPhotoID == nil {
             selectedPhotoID = photos.first?.id
         }
         hasLoadedPhotos = true
+    }
+
+    /// Reloads photo data from the shared repository so home reflects imports and deletes performed in other tabs.
+    func reloadPhotos() async {
+        photos = await repository.fetchTravelPhotos()
+        if let selectedPhotoID,
+           photos.contains(where: { $0.id == selectedPhotoID }) == false {
+            self.selectedPhotoID = photos.first?.id
+        }
     }
 
     /// Refreshes the session route history so the home summary can reflect newly completed recordings.

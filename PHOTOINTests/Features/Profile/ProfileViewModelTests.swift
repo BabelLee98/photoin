@@ -76,6 +76,33 @@ struct ProfileViewModelTests {
         #expect(viewModel.exportDocument != nil)
         #expect(viewModel.exportErrorMessage == nil)
     }
+
+    @Test func deletingImportedPhotoRefreshesProfileContent() async throws {
+        let importedPhotoID = UUID()
+        let repository = MockProfileTravelPhotoRepository(
+            photos: [
+                TravelPhoto(
+                    id: importedPhotoID,
+                    locationName: "镰仓高校前",
+                    regionName: "神奈川 · 日本",
+                    captureDate: "2026.07.20",
+                    coordinate: CLLocationCoordinate2D(latitude: 35.3069, longitude: 139.5007),
+                    previewImageData: Data([0x01])
+                )
+            ]
+        )
+        let viewModel = ProfileViewModel(
+            travelPhotoRepository: repository,
+            hikeRouteHistoryRepository: MockProfileRouteHistoryRepository(routes: [])
+        )
+
+        await viewModel.reloadContent()
+        await viewModel.deleteImportedPhoto(id: importedPhotoID)
+
+        #expect(viewModel.totalPhotoCount == 0)
+        #expect(viewModel.totalLocationCount == 0)
+        #expect(viewModel.deleteFeedbackMessage == nil)
+    }
 }
 
 @MainActor
@@ -94,6 +121,16 @@ private final class MockProfileTravelPhotoRepository: TravelPhotoRepository {
     /// Stores imported photos at the beginning of the mock list so feature tests can simulate refresh behavior.
     func saveImportedTravelPhotos(_ photos: [TravelPhoto]) async {
         self.photos = photos + self.photos
+    }
+
+    /// Deletes a matching mock photo so profile tests can verify post-delete refresh behavior.
+    func deleteImportedTravelPhoto(id: TravelPhoto.ID) async -> Bool {
+        guard photos.contains(where: { $0.id == id }) else {
+            return false
+        }
+
+        photos.removeAll { $0.id == id }
+        return true
     }
 }
 

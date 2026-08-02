@@ -24,6 +24,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0E3E3B533EED4112B2C8CAFC627290FB /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = text.markdown; path = AGENTS.md; sourceTree = "<group>"; };
+		0265FFF17BEF4D96A2D656CB5902937B /* 2026-08-02-summary.md */ = {isa = PBXFileReference; lastKnownFileType = text.markdown; path = 2026-08-02-summary.md; sourceTree = "<group>"; };
 		86AE25682F83D7060018B746 /* PHOTOIN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PHOTOIN.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		86AE25772F83D7080018B746 /* PHOTOINTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PHOTOINTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		86AE25812F83D7080018B746 /* PHOTOINUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PHOTOINUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -75,6 +77,8 @@
 		86AE255F2F83D7060018B746 = {
 			isa = PBXGroup;
 			children = (
+				0E3E3B533EED4112B2C8CAFC627290FB /* AGENTS.md */,
+				97FD3600EC2A4B89BB6D311222028CA3 /* summaries */,
 				86AE256A2F83D7060018B746 /* PHOTOIN */,
 				86AE257A2F83D7080018B746 /* PHOTOINTests */,
 				86AE25842F83D7080018B746 /* PHOTOINUITests */,
@@ -90,6 +94,14 @@
 				86AE25812F83D7080018B746 /* PHOTOINUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		97FD3600EC2A4B89BB6D311222028CA3 /* summaries */ = {
+			isa = PBXGroup;
+			children = (
+				0265FFF17BEF4D96A2D656CB5902937B /* 2026-08-02-summary.md */,
+			);
+			path = summaries;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -395,9 +407,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YN8BKKZRJ4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "PHOTOIN 需要访问你的位置，用于记录徒步路线和添加途中记录点。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "PHOTOIN 需要读取所选照片的拍摄时间和定位信息，用于把旅行照片准确展示在地图上。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -427,9 +441,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YN8BKKZRJ4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "PHOTOIN 需要访问你的位置，用于记录徒步路线和添加途中记录点。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "PHOTOIN 需要读取所选照片的拍摄时间和定位信息，用于把旅行照片准确展示在地图上。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

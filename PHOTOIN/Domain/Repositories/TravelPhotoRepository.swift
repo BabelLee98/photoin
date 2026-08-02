@@ -13,4 +13,7 @@ protocol TravelPhotoRepository {
 
     /// Stores imported travel photos for the current app session.
     func saveImportedTravelPhotos(_ photos: [TravelPhoto]) async
+
+    /// Deletes a user-imported photo when it exists in the local import store.
+    func deleteImportedTravelPhoto(id: TravelPhoto.ID) async -> Bool
 }

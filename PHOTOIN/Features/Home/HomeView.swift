@@ -157,6 +157,9 @@ struct HomeView: View {
         }
         .onAppear {
             viewModel.refreshRecordedRoutes()
+            Task {
+                await viewModel.reloadPhotos()
+            }
         }
         .onChange(of: selectedPhotoItems.count) { _, newCount in
             guard newCount > 0 else {
