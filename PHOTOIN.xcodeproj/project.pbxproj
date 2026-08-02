@@ -24,8 +24,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		0E3E3B533EED4112B2C8CAFC627290FB /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = text.markdown; path = AGENTS.md; sourceTree = "<group>"; };
 		0265FFF17BEF4D96A2D656CB5902937B /* 2026-08-02-summary.md */ = {isa = PBXFileReference; lastKnownFileType = text.markdown; path = 2026-08-02-summary.md; sourceTree = "<group>"; };
+		0E3E3B533EED4112B2C8CAFC627290FB /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = text.markdown; path = AGENTS.md; sourceTree = "<group>"; };
 		86AE25682F83D7060018B746 /* PHOTOIN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PHOTOIN.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		86AE25772F83D7080018B746 /* PHOTOINTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PHOTOINTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		86AE25812F83D7080018B746 /* PHOTOINUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PHOTOINUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
