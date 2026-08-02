@@ -131,6 +131,25 @@ struct TravelPhotoMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MKMapView, viewFor annotation: any MKAnnotation) -> MKAnnotationView? {
+            if let cluster = annotation as? MKClusterAnnotation {
+                let clusterView = mapView.dequeueReusableAnnotationView(
+                    withIdentifier: Self.annotationReuseIdentifier,
+                    for: cluster
+                ) as? MKMarkerAnnotationView ?? MKMarkerAnnotationView(
+                    annotation: cluster,
+                    reuseIdentifier: Self.annotationReuseIdentifier
+                )
+
+                clusterView.annotation = cluster
+                clusterView.markerTintColor = .systemBlue
+                clusterView.glyphText = "\(cluster.memberAnnotations.count)"
+                clusterView.glyphImage = nil
+                clusterView.glyphTintColor = .white
+                clusterView.canShowCallout = true
+                clusterView.displayPriority = .required
+                return clusterView
+            }
+
             guard let travelPhotoAnnotation = annotation as? TravelPhotoAnnotation else {
                 return nil
             }
@@ -190,6 +209,7 @@ struct TravelPhotoMapView: UIViewRepresentable {
             let photoGlyphImage = thumbnailImage(for: photo, isSelected: isSelected)
 
             markerView.canShowCallout = false
+            markerView.clusteringIdentifier = "travel-photo-location"
             markerView.animatesWhenAdded = true
             markerView.markerTintColor = UIColor(markerStyle.accentColor)
             markerView.glyphImage = photoGlyphImage ?? UIImage(systemName: markerStyle.symbolName, withConfiguration: configuration)

@@ -24,7 +24,7 @@ final class SampleTravelPhotoRepository: TravelPhotoRepository {
     /// Appends imported photos to the session store and persists them so the next app launch can restore the same home map state.
     func saveImportedTravelPhotos(_ photos: [TravelPhoto]) async {
         self.photos = photos + self.photos
-        persistence.saveImportedPhotos(photos)
+        persistence.saveImportedPhotos(self.photos)
     }
 
     /// Removes a persisted imported photo and updates the local photo store.

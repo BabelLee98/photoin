@@ -163,6 +163,33 @@ struct HomeViewModelTests {
         #expect(viewModel.featuredPhoto?.id == importedPhotos.first?.id)
         #expect(viewModel.uploadFeedbackMessage == "已导入 2 张照片。")
     }
+
+    @Test func importingPhotosAtSameLocationKeepsBothPhotos() async throws {
+        let existingPhoto = TravelPhoto(
+            locationName: "上海外滩",
+            regionName: "中国",
+            captureDate: "2026.04.01",
+            coordinate: .init(latitude: 31.2400, longitude: 121.4900)
+        )
+        let importedPhoto = TravelPhoto(
+            locationName: "上海外滩",
+            regionName: "中国",
+            captureDate: "2026.04.02",
+            coordinate: .init(latitude: 31.2400, longitude: 121.4900)
+        )
+        let viewModel = HomeViewModel(
+            repository: MockTravelPhotoRepository(photos: [existingPhoto]),
+            explorationService: TravelPhotoExplorationService(),
+            hikeRouteHistoryRepository: MockHikeRouteHistoryRepository(routes: []),
+            travelPhotoImporter: MockTravelPhotoImporter(importedPhotos: [importedPhoto])
+        )
+
+        await viewModel.loadPhotosIfNeeded()
+        await viewModel.importSelectedPhotos([TravelPhotoImportItem(imageData: Data([0x03]), assetIdentifier: "asset-3")])
+
+        #expect(viewModel.totalPhotoCount == 2)
+        #expect(viewModel.filteredPhotos.filter { $0.locationName == "上海外滩" }.count == 2)
+    }
 }
 
 @MainActor
