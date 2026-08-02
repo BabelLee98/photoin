@@ -37,6 +37,11 @@ struct HikeRouteRecordingService {
             return route
         }
 
+        guard let startedAt = route.startedAt,
+              sample.timestamp >= startedAt else {
+            return route
+        }
+
         let point = HikeRoute.Point(
             coordinate: sample.coordinate,
             timestamp: sample.timestamp

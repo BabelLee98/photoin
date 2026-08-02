@@ -111,4 +111,18 @@ struct HikeRouteRecordingServiceTests {
         #expect(ignoredUpdate.points.count == 1)
         #expect(ignoredUpdate.totalDistance == 0)
     }
+
+    @Test func appendLocationIgnoresCachedSamplesBeforeRecordingStarts() async throws {
+        let startedRoute = service.startRoute(activityType: .hike, at: Date(timeIntervalSince1970: 4_000))
+        let cachedSample = HikeLocationSample(
+            coordinate: HikeCoordinate(latitude: 31.2304, longitude: 121.4737),
+            timestamp: Date(timeIntervalSince1970: 3_990),
+            horizontalAccuracy: 6
+        )
+
+        let updatedRoute = service.appendLocation(cachedSample, to: startedRoute)
+
+        #expect(updatedRoute.points.isEmpty)
+        #expect(updatedRoute.totalDistance == 0)
+    }
 }

@@ -182,8 +182,9 @@ final class RouteRecordingViewModel {
         }
 
         route = recordingService.startRoute(activityType: selectedActivityType)
+        latestSample = nil
         infoMessage = "\(selectedActivityType.displayName)记录已开始，等待定位点接入。"
-        beginTrackingStream(resetExistingStream: latestSample == nil)
+        beginTrackingStream(resetExistingStream: true)
     }
 
     /// Stops the active tracking task and freezes the route summary.

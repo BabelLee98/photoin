@@ -25,7 +25,7 @@ struct RouteRecordingViewModelTests {
 
         let sample = HikeLocationSample(
             coordinate: HikeCoordinate(latitude: 31.2304, longitude: 121.4737),
-            timestamp: Date(timeIntervalSince1970: 1_000),
+            timestamp: Date(),
             horizontalAccuracy: 6
         )
 

@@ -73,15 +73,26 @@ struct PhotosPickerTravelPhotoImporter: TravelPhotoImporting {
         return await PHPhotoLibrary.requestAuthorization(for: .readWrite)
     }
 
-    /// Reads metadata from the Photos asset first, then falls back to the image's embedded EXIF and GPS dictionaries.
+    /// Reads the original file's EXIF GPS first, then falls back to the Photos asset metadata when the file payload is missing location data.
     private func metadata(for item: TravelPhotoImportItem, photoLibraryStatus: PHAuthorizationStatus) -> PhotoMetadata {
+        let embeddedMetadata = imageMetadata(from: item.imageData)
+        let resolvedAssetMetadata: PhotoMetadata?
+
         if canReadPhotoLibraryAssets(status: photoLibraryStatus),
-           let assetIdentifier = item.assetIdentifier,
-           let assetMetadata = assetMetadata(for: assetIdentifier) {
-            return assetMetadata
+           let assetIdentifier = item.assetIdentifier {
+            resolvedAssetMetadata = assetMetadata(for: assetIdentifier)
+        } else {
+            resolvedAssetMetadata = nil
         }
 
-        return imageMetadata(from: item.imageData)
+        if let embeddedCoordinate = embeddedMetadata.coordinate {
+            return PhotoMetadata(
+                captureDate: embeddedMetadata.captureDate ?? resolvedAssetMetadata?.captureDate,
+                coordinate: embeddedCoordinate
+            )
+        }
+
+        return resolvedAssetMetadata ?? embeddedMetadata
     }
 
     /// Treats full and limited library access as enough to resolve selected asset metadata from Photos.
