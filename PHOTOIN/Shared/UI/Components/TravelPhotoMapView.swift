@@ -245,7 +245,7 @@ private final class TravelPhotoAnnotation: NSObject, MKAnnotation {
     let photo: TravelPhoto
 
     nonisolated var coordinate: CLLocationCoordinate2D {
-        photo.coordinate
+        CoordinateTransform.wgs84ToGCJ02(photo.coordinate)
     }
 
     nonisolated var title: String? {

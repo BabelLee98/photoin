@@ -129,19 +129,21 @@ struct HikeRouteMapView: UIViewRepresentable {
             return
         }
 
-        if let coordinate = displayedCoordinates.first ?? latestSample?.coordinate.clCoordinate {
+        if let coordinate = displayedCoordinates.first
+            ?? latestSample.map({ CoordinateTransform.wgs84ToGCJ02($0.coordinate.clCoordinate) }) {
             mapView.setRegion(Self.region(around: coordinate), animated: true)
-        } else if let coordinate = route.points.first?.coordinate ?? latestSample?.coordinate {
-            mapView.setRegion(Self.region(around: coordinate.clCoordinate), animated: true)
+        } else if let coordinate = route.points.first?.coordinate
+            ?? latestSample?.coordinate {
+            mapView.setRegion(Self.region(around: CoordinateTransform.wgs84ToGCJ02(coordinate.clCoordinate)), animated: true)
         }
     }
 
     /// Builds the currently visible path using recorded points plus the latest live sample so the user sees movement before the next persisted point lands.
     private func displayedRouteCoordinates() -> [CLLocationCoordinate2D] {
-        var coordinates = route.points.map { $0.coordinate.clCoordinate }
+        var coordinates = route.points.map { CoordinateTransform.wgs84ToGCJ02($0.coordinate.clCoordinate) }
 
         guard route.isRecording,
-              let latestCoordinate = latestSample?.coordinate.clCoordinate else {
+              let latestCoordinate = latestSample.map({ CoordinateTransform.wgs84ToGCJ02($0.coordinate.clCoordinate) }) else {
             return coordinates
         }
 
@@ -172,7 +174,7 @@ struct HikeRouteMapView: UIViewRepresentable {
         var annotations = [
             HikeRouteMarkerAnnotation(
                 kind: .start,
-                coordinate: firstPoint.coordinate.clCoordinate,
+                coordinate: CoordinateTransform.wgs84ToGCJ02(firstPoint.coordinate.clCoordinate),
                 timestamp: firstPoint.timestamp
             )
         ]
@@ -183,7 +185,7 @@ struct HikeRouteMapView: UIViewRepresentable {
             annotations.append(
                 HikeRouteMarkerAnnotation(
                     kind: .finish,
-                    coordinate: lastPoint.coordinate.clCoordinate,
+                    coordinate: CoordinateTransform.wgs84ToGCJ02(lastPoint.coordinate.clCoordinate),
                     timestamp: lastPoint.timestamp
                 )
             )
@@ -201,7 +203,7 @@ struct HikeRouteMapView: UIViewRepresentable {
         if showsUserLocation,
            let coordinate = mapView.userLocation.location?.coordinate,
            coordinator.emptyStateCenter != .userLocation {
-            mapView.setRegion(Self.region(around: coordinate), animated: true)
+            mapView.setRegion(Self.region(around: CoordinateTransform.wgs84ToGCJ02(coordinate)), animated: true)
             coordinator.emptyStateCenter = .userLocation
             return
         }
@@ -210,14 +212,18 @@ struct HikeRouteMapView: UIViewRepresentable {
             return
         }
 
-        mapView.setRegion(Self.region(around: Self.shanghaiCenter), animated: false)
+        mapView.setRegion(
+            Self.region(around: CoordinateTransform.wgs84ToGCJ02(Self.shanghaiCenter)),
+            animated: false
+        )
         coordinator.emptyStateCenter = .shanghai
     }
 
     /// Builds the initial 3-kilometer region used before the map has enough route content to fit.
     private func defaultRegion() -> MKCoordinateRegion {
-        let center = route.latestCoordinate?.clCoordinate
-            ?? Self.shanghaiCenter
+        let center = route.latestCoordinate
+            .map { CoordinateTransform.wgs84ToGCJ02($0.clCoordinate) }
+            ?? CoordinateTransform.wgs84ToGCJ02(Self.shanghaiCenter)
 
         return Self.region(around: center)
     }
@@ -319,7 +325,7 @@ struct HikeRouteMapView: UIViewRepresentable {
                 return
             }
 
-            mapView.setRegion(HikeRouteMapView.region(around: coordinate), animated: true)
+            mapView.setRegion(HikeRouteMapView.region(around: CoordinateTransform.wgs84ToGCJ02(coordinate)), animated: true)
             emptyStateCenter = .userLocation
         }
     }
