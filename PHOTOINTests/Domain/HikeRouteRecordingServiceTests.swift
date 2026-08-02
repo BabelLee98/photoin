@@ -69,4 +69,25 @@ struct HikeRouteRecordingServiceTests {
         #expect(finishedRoute.isRecording == false)
         #expect(finishedRoute.endedAt != nil)
     }
+
+    @Test func appendLocationCapturesShortWalkingSegments() async throws {
+        let startedRoute = service.startRoute(activityType: .hike, at: Date(timeIntervalSince1970: 2_000))
+        let firstSample = HikeLocationSample(
+            coordinate: HikeCoordinate(latitude: 31.2304, longitude: 121.4737),
+            timestamp: Date(timeIntervalSince1970: 2_010),
+            horizontalAccuracy: 6
+        )
+        let shortWalkSample = HikeLocationSample(
+            coordinate: HikeCoordinate(latitude: 31.230435, longitude: 121.473735),
+            timestamp: Date(timeIntervalSince1970: 2_020),
+            horizontalAccuracy: 6
+        )
+
+        let firstUpdate = service.appendLocation(firstSample, to: startedRoute)
+        let walkingUpdate = service.appendLocation(shortWalkSample, to: firstUpdate)
+
+        #expect(firstUpdate.points.count == 1)
+        #expect(walkingUpdate.points.count == 2)
+        #expect(walkingUpdate.totalDistance > 0)
+    }
 }

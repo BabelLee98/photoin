@@ -9,7 +9,7 @@ import CoreLocation
 import Foundation
 
 struct HikeRouteRecordingService {
-    private let minimumPointDistance: CLLocationDistance = 8
+    private let minimumPointDistance: CLLocationDistance = 4
     private let maximumAcceptedAccuracy: CLLocationAccuracy = 65
 
     /// Starts a fresh route session when the user taps the record button.

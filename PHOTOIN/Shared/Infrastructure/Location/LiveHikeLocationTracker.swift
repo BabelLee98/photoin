@@ -18,7 +18,7 @@ final class LiveHikeLocationTracker: NSObject, HikeLocationTracking {
         super.init()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.distanceFilter = 5
+        locationManager.distanceFilter = 2
     }
 
     /// Returns the current Core Location authorization status.
