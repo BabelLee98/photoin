@@ -15,7 +15,7 @@ enum CoordinateTransform {
 
     /// Converts the app's canonical WGS84 coordinate into GCJ-02 for mainland China map display.
     static func wgs84ToGCJ02(_ coordinate: CLLocationCoordinate2D) -> CLLocationCoordinate2D {
-        guard isValid(coordinate), isInChina(coordinate) else {
+        guard usesGCJ02Display(for: coordinate) else {
             return coordinate
         }
 
@@ -24,6 +24,11 @@ enum CoordinateTransform {
             latitude: coordinate.latitude + delta.latitude,
             longitude: coordinate.longitude + delta.longitude
         )
+    }
+
+    /// 判断坐标在国内地图展示时是否需要使用 GCJ-02。
+    static func usesGCJ02Display(for coordinate: CLLocationCoordinate2D) -> Bool {
+        isValid(coordinate) && isInChina(coordinate)
     }
 
     /// Returns whether a coordinate is inside the region where the GCJ-02 transform applies.

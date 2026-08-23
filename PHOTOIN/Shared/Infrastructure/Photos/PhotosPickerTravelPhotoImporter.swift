@@ -30,6 +30,8 @@ struct PhotosPickerTravelPhotoImporter: TravelPhotoImporting {
         let coordinate: CLLocationCoordinate2D?
     }
 
+    private let placeSummaryResolver = PhotoPlaceSummaryResolver()
+
     /// Converts selected photo payloads into map-ready models by reading the asset's real date and location metadata whenever available.
     func importTravelPhotos(from items: [TravelPhotoImportItem], startingAt existingPhotoCount: Int) async throws -> [TravelPhoto] {
         guard items.isEmpty == false else {
@@ -143,38 +145,7 @@ struct PhotosPickerTravelPhotoImporter: TravelPhotoImporting {
             return ("待整理地点 \(sequence)", "未定位")
         }
 
-        let geocoder = CLGeocoder()
-        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-
-        if let placemark = try? await geocoder.reverseGeocodeLocation(location).first {
-            let locationName = [
-                placemark.name,
-                placemark.locality,
-                placemark.subLocality,
-                placemark.administrativeArea
-            ]
-            .compactMap { $0 }
-            .first(where: { $0.isEmpty == false }) ?? "已定位照片 \(sequence)"
-
-            let regionCandidates = [
-                placemark.locality,
-                placemark.administrativeArea,
-                placemark.country
-            ]
-            .compactMap { value -> String? in
-                guard let value, value.isEmpty == false else {
-                    return nil
-                }
-                return value
-            }
-
-            let deduplicatedRegion = Array(NSOrderedSet(array: regionCandidates)) as? [String] ?? regionCandidates
-            let regionName = deduplicatedRegion.isEmpty ? coordinateSummary(for: coordinate) : deduplicatedRegion.joined(separator: " · ")
-
-            return (locationName, regionName)
-        }
-
-        return ("已定位照片 \(sequence)", coordinateSummary(for: coordinate))
+        return await placeSummaryResolver.resolve(for: coordinate, sequence: sequence, hasLocation: true)
     }
 
     /// Extracts the capture timestamp from EXIF or TIFF properties when the Photos asset metadata is unavailable.
@@ -208,11 +179,6 @@ struct PhotosPickerTravelPhotoImporter: TravelPhotoImporting {
         let signedLongitude = longitudeRef == "W" ? -longitude : longitude
 
         return CLLocationCoordinate2D(latitude: signedLatitude, longitude: signedLongitude)
-    }
-
-    /// Formats a coordinate pair so located photos still surface useful context when reverse geocoding does not return a place name.
-    private func coordinateSummary(for coordinate: CLLocationCoordinate2D) -> String {
-        String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
     }
 
     /// Spreads placeholder coordinates around central Beijing only for photos that do not carry any embedded location metadata.
