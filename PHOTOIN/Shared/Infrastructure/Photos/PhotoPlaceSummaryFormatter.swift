@@ -96,15 +96,20 @@ struct PhotoPlaceSummaryFormatter {
     }
 
     private func firstNonEmpty(_ values: [String?]) -> String? {
-        values.compactMap { value in
+        for value in values {
             guard let value else {
-                return nil
+                continue
             }
 
             let trimmedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
-            return trimmedValue.isEmpty ? nil : trimmedValue
+            guard trimmedValue.isEmpty == false else {
+                continue
+            }
+
+            return trimmedValue
         }
-        .first
+
+        return nil
     }
 
     private func deduplicatedNonEmptyValues(_ values: [String?]) -> [String] {

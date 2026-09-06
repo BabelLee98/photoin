@@ -25,7 +25,7 @@ final class SampleTravelPhotoRepository: TravelPhotoRepository {
     /// Returns the photos imported by the user and restored from local persistence.
     func fetchTravelPhotos() async -> [TravelPhoto] {
         await refreshLegacyPlaceSummariesIfNeeded()
-        photos
+        return photos
     }
 
     /// Appends imported photos to the session store and persists them so the next app launch can restore the same home map state.

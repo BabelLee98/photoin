@@ -49,7 +49,7 @@ struct RouteRecordingView: View {
                 .padding(.horizontal, 16)
 
                 HStack(spacing: 10) {
-                    floatingMetaText(title: "类型", value: currentActivityType.displayName)
+                    floatingMetaText(title: "类型", value: "徒步")
                     floatingMetaText(title: "记录点", value: "\(viewModel.route.checkpoints.count)")
                     Spacer(minLength: 0)
                 }
@@ -85,7 +85,7 @@ struct RouteRecordingView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("徒步路线")
+                    Text("徒步模式")
                         .font(.system(.largeTitle, design: .rounded, weight: .bold))
                         .foregroundStyle(Color.white)
 
@@ -119,24 +119,6 @@ struct RouteRecordingView: View {
                 .accessibilityHint("在普通地图和影像地图之间切换")
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("记录类型")
-                    .font(.system(.footnote, design: .rounded, weight: .semibold))
-                    .foregroundStyle(Color.white.opacity(0.72))
-
-                Picker(
-                    "记录类型",
-                    selection: Binding(
-                        get: { viewModel.selectedActivityType },
-                        set: { viewModel.updateSelectedActivityType($0) }
-                    )
-                ) {
-                    ForEach(HikeRoute.ActivityType.allCases) { activityType in
-                        Text(activityType.displayName).tag(activityType)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -171,7 +153,7 @@ struct RouteRecordingView: View {
                 }
                 .buttonStyle(RoutePrimaryButtonStyle(isRecording: viewModel.route.isRecording))
 
-                Button("添加记录点") {
+                Button("添加定位") {
                     viewModel.addCheckpoint()
                 }
                 .buttonStyle(RouteSecondaryButtonStyle())
@@ -181,11 +163,6 @@ struct RouteRecordingView: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 22)
-    }
-
-    /// Returns the currently active route type, or the next selected type before recording starts.
-    private var currentActivityType: HikeRoute.ActivityType {
-        viewModel.route.isRecording ? viewModel.route.activityType : viewModel.selectedActivityType
     }
 
     /// Renders the prominent floating route metrics without enclosing cards so the map stays visually open.

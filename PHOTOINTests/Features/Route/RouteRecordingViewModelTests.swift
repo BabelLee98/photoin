@@ -12,7 +12,7 @@ import Testing
 
 @MainActor
 struct RouteRecordingViewModelTests {
-    @Test func finishedMountainRouteIsSavedIntoSharedHistory() async throws {
+    @Test func finishedHikeRouteIsSavedIntoSharedHistory() async throws {
         let historyRepository = MockRouteHistoryRepository()
         let viewModel = RouteRecordingViewModel(
             locationTracker: MockHikeLocationTracker(),
@@ -20,7 +20,6 @@ struct RouteRecordingViewModelTests {
             hikeRouteHistoryRepository: historyRepository
         )
 
-        viewModel.updateSelectedActivityType(.mountainClimb)
         viewModel.toggleRecording()
 
         let sample = HikeLocationSample(
@@ -34,7 +33,7 @@ struct RouteRecordingViewModelTests {
         viewModel.toggleRecording()
 
         #expect(historyRepository.fetchRecordedRoutes().count == 1)
-        #expect(historyRepository.fetchRecordedRoutes().first?.activityType == .mountainClimb)
+        #expect(historyRepository.fetchRecordedRoutes().first?.activityType == .hike)
     }
 }
 

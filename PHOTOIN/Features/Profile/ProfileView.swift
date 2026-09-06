@@ -341,7 +341,7 @@ private struct ProfileRouteHistoryView: View {
             if routes.isEmpty {
                 ProfileEmptyStateView(
                     title: "还没有路线记录",
-                    description: "去第二页开始记录徒步或爬山路线，完成后这里会自动收集你的足迹。"
+                    description: "去第二页开始记录徒步路线，完成后这里会自动收集你的足迹。"
                 )
                 .listRowBackground(Color.clear)
             } else {

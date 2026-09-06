@@ -52,7 +52,7 @@ struct HikeRouteRecordingServiceTests {
     }
 
     @Test func addCheckpointCreatesManualMarkerAndFinishingStopsRecording() async throws {
-        let startedRoute = service.startRoute(activityType: .mountainClimb, at: Date(timeIntervalSince1970: 1_000))
+        let startedRoute = service.startRoute(activityType: .hike, at: Date(timeIntervalSince1970: 1_000))
         let sample = HikeLocationSample(
             coordinate: HikeCoordinate(latitude: 34.3416, longitude: 108.9398),
             timestamp: Date(timeIntervalSince1970: 1_015),
@@ -65,7 +65,7 @@ struct HikeRouteRecordingServiceTests {
         #expect(routeWithCheckpoint.checkpoints.count == 1)
         #expect(routeWithCheckpoint.points.count == 1)
         #expect(routeWithCheckpoint.checkpoints.first?.title == "记录点 1")
-        #expect(finishedRoute.activityType == .mountainClimb)
+        #expect(finishedRoute.activityType == .hike)
         #expect(finishedRoute.isRecording == false)
         #expect(finishedRoute.endedAt != nil)
     }

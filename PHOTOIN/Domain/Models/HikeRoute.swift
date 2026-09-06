@@ -11,17 +11,11 @@ import Foundation
 struct HikeRoute: Equatable, Sendable {
     enum ActivityType: String, CaseIterable, Identifiable, Sendable {
         case hike
-        case mountainClimb
 
         var id: Self { self }
 
         var displayName: String {
-            switch self {
-            case .hike:
-                "徒步"
-            case .mountainClimb:
-                "爬山"
-            }
+            "徒步"
         }
     }
 

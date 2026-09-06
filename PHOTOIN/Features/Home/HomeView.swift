@@ -65,7 +65,6 @@ struct HomeView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 6) {
                         statLine(prefix: "目前去了", value: viewModel.totalVisitedCityCount, suffix: "个城市")
-                        statLine(prefix: "爬了", value: viewModel.totalClimbedMountainCount, suffix: "座山")
                         statLine(prefix: "徒步了", value: viewModel.totalHikeCount, suffix: "次")
                         statLine(prefix: "上传了", value: viewModel.totalPhotoCount, suffix: "张照片")
                     }

@@ -19,7 +19,6 @@ final class RouteRecordingViewModel {
     }
 
     var route: HikeRoute = .empty
-    var selectedActivityType: HikeRoute.ActivityType = .hike
     var latestSample: HikeLocationSample?
     var permissionState: PermissionState = .unknown
     var infoMessage = "点击开始后会记录徒步路线，你也可以在途中手动添加记录点。"
@@ -92,24 +91,6 @@ final class RouteRecordingViewModel {
         infoMessage = "已添加 \(updatedRoute.checkpoints.last?.title ?? "记录点")。"
     }
 
-    /// Updates the selected recording type for the next route while preserving the summary of finished routes.
-    func updateSelectedActivityType(_ activityType: HikeRoute.ActivityType) {
-        selectedActivityType = activityType
-
-        if route.isRecording {
-            route = HikeRoute(
-                id: route.id,
-                activityType: activityType,
-                startedAt: route.startedAt,
-                endedAt: route.endedAt,
-                points: route.points,
-                checkpoints: route.checkpoints,
-                totalDistance: route.totalDistance
-            )
-            infoMessage = "当前按\(activityType.displayName)模式记录路线。"
-        }
-    }
-
     /// Clears the current one-shot error prompt after the user acknowledges it.
     func dismissLocationError() {
         locationErrorMessage = nil
@@ -145,19 +126,12 @@ final class RouteRecordingViewModel {
 
     /// Describes the current recording state for the header and control area.
     func statusText() -> String {
-        switch permissionState {
-        case .denied:
-            return "需要开启定位权限后才能记录路线。"
-        case .unknown:
-            return route.isRecording ? "正在等待定位权限或首个定位点。" : "点击开始后即可记录\(selectedActivityType.displayName)路线。"
-        case .ready:
-            return route.isRecording ? "正在记录\(route.activityType.displayName)路线，可随时添加记录点。" : "准备就绪，点击开始即可追踪\(selectedActivityType.displayName)路线。"
-        }
+        return "边徒步 边定位"
     }
 
     /// Drives the main CTA title so the button always reflects the next available action.
     func primaryActionTitle() -> String {
-        route.isRecording ? "结束记录" : "开始记录"
+        route.isRecording ? "结束记录" : "开始徒步"
     }
 
     /// Indicates whether the checkpoint control should be enabled.
@@ -181,9 +155,9 @@ final class RouteRecordingViewModel {
             return
         }
 
-        route = recordingService.startRoute(activityType: selectedActivityType)
+        route = recordingService.startRoute(activityType: .hike)
         latestSample = nil
-        infoMessage = "\(selectedActivityType.displayName)记录已开始，等待定位点接入。"
+        infoMessage = "徒步记录已开始，等待定位点接入。"
         beginTrackingStream(resetExistingStream: true)
     }
 
@@ -194,7 +168,7 @@ final class RouteRecordingViewModel {
         trackingTask = nil
         route = recordingService.finishRoute(route)
         persistCompletedRouteIfNeeded()
-        infoMessage = route.points.isEmpty ? "这次路线还没有留下有效轨迹。" : "\(route.activityType.displayName)记录已结束。"
+        infoMessage = route.points.isEmpty ? "这次路线还没有留下有效轨迹。" : "徒步记录已结束。"
     }
 
     /// Applies authorization and location events from the live tracker into view-friendly feature state.

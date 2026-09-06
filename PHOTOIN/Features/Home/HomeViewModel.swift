@@ -65,12 +65,8 @@ final class HomeViewModel {
         totalVisitedLocationCount
     }
 
-    var totalClimbedMountainCount: Int {
-        recordedRoutes.filter { $0.activityType == .mountainClimb }.count
-    }
-
     var totalHikeCount: Int {
-        recordedRoutes.filter { $0.activityType == .hike }.count
+        recordedRoutes.count
     }
 
     /// Loads the current travel photo collection once so the screen can render without duplicate fetches.

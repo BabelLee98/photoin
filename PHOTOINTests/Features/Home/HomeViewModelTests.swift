@@ -93,7 +93,7 @@ struct HomeViewModelTests {
             hikeRouteHistoryRepository: MockHikeRouteHistoryRepository(
                 routes: [
                     HikeRoute(
-                        activityType: .mountainClimb,
+                        activityType: .hike,
                         startedAt: Date(timeIntervalSince1970: 1_000),
                         endedAt: Date(timeIntervalSince1970: 1_200),
                         points: [],
@@ -116,8 +116,7 @@ struct HomeViewModelTests {
         await viewModel.loadPhotosIfNeeded()
 
         #expect(viewModel.totalVisitedCityCount == 3)
-        #expect(viewModel.totalClimbedMountainCount == 1)
-        #expect(viewModel.totalHikeCount == 1)
+        #expect(viewModel.totalHikeCount == 2)
         #expect(viewModel.totalPhotoCount == 3)
     }
 
